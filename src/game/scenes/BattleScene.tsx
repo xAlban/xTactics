@@ -4,21 +4,21 @@ import GridFloor from '@/game/map/GridFloor'
 import UnitCube from '@/game/units/UnitCube'
 import PathPreview from '@/game/combat/PathPreview'
 import { ARENA_SMALL } from '@/game/map/combatMaps'
-import { createPlayer } from '@/game/units/playerFactory'
 import { generateGridTiles, mapToGridConfig } from '@/game/map/gridUtils'
 import { useCombatStore } from '@/stores/combatStore'
+import { useGameModeStore } from '@/stores/gameModeStore'
 
 const ROTATION_Y = Math.PI / 4
 
 function BattleScene() {
   const config = useMemo(() => mapToGridConfig(ARENA_SMALL), [])
+  const player = useGameModeStore((s) => s.player)
 
-  // ---- Init combat with a test knight on mount ----
+  // ---- Init combat with the player from game mode store ----
   useEffect(() => {
-    const player = createPlayer('player1', 'xAlban', 'bomberman')
     const tiles = generateGridTiles(ARENA_SMALL)
     useCombatStore.getState().initCombat([player], [{ col: 3, row: 4 }], tiles)
-  }, [])
+  }, [player])
 
   const units = useCombatStore((s) => s.units)
   const movementPath = useCombatStore((s) => s.movementPath)
