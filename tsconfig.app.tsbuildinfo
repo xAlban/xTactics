@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/game/Game.tsx","./src/game/camera/IsometricCamera.tsx","./src/game/scenes/BattleScene.tsx","./src/lib/utils.ts","./src/test/App.test.tsx","./src/test/setup.ts"],"version":"5.9.3"}
