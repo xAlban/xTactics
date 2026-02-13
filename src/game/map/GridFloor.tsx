@@ -1,53 +1,106 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { InstancedMesh, Matrix4, Color, Object3D } from 'three'
+import type { CombatMapDefinition } from '@/types/grid'
 import {
   generateGridTiles,
   gridToWorld,
-  DEFAULT_GRID_CONFIG,
+  mapToGridConfig,
+  DEFAULT_MAP,
 } from '@/game/map/gridUtils'
 
-const TILE_HEIGHT = 0.08
-const TILE_COLOR = new Color('#4a4a4a')
+const GROUND_HEIGHT = 0.08
+const OBSTACLE_HEIGHT = 0.4
+const GROUND_COLOR = new Color('#4a4a4a')
+const OBSTACLE_COLOR = new Color('#2c2c2c')
 const ROTATION_Y = Math.PI / 4
 
-function GridFloor() {
-  const meshRef = useRef<InstancedMesh>(null)
-  const tiles = useMemo(() => generateGridTiles(), [])
+interface GridFloorProps {
+  map?: CombatMapDefinition
+}
 
-  // ---- Set instance transforms and colors ----
+function GridFloor({ map = DEFAULT_MAP }: GridFloorProps) {
+  const groundRef = useRef<InstancedMesh>(null)
+  const obstacleRef = useRef<InstancedMesh>(null)
+
+  const config = useMemo(() => mapToGridConfig(map), [map])
+  const allTiles = useMemo(() => generateGridTiles(map), [map])
+
+  // ---- Split tiles by type for separate InstancedMesh rendering ----
+  const { groundTiles, obstacleTiles } = useMemo(() => {
+    const ground = allTiles.filter((t) => t.type === 'ground')
+    const obstacles = allTiles.filter((t) => t.type === 'obstacle')
+    return { groundTiles: ground, obstacleTiles: obstacles }
+  }, [allTiles])
+
+  // ---- Set ground instance transforms and colors ----
   useEffect(() => {
-    if (!meshRef.current) return
+    if (!groundRef.current || groundTiles.length === 0) return
 
     const dummy = new Object3D()
     const matrix = new Matrix4()
 
-    for (const tile of tiles) {
-      const pos = gridToWorld(tile.coord)
+    for (let i = 0; i < groundTiles.length; i++) {
+      const pos = gridToWorld(groundTiles[i]!.coord, config)
       dummy.position.set(pos.x, 0, pos.z)
       dummy.updateMatrix()
       matrix.copy(dummy.matrix)
-      meshRef.current.setMatrixAt(tile.index, matrix)
-      meshRef.current.setColorAt(tile.index, TILE_COLOR)
+      groundRef.current.setMatrixAt(i, matrix)
+      groundRef.current.setColorAt(i, GROUND_COLOR)
     }
 
-    meshRef.current.instanceMatrix.needsUpdate = true
-    if (meshRef.current.instanceColor) {
-      meshRef.current.instanceColor.needsUpdate = true
+    groundRef.current.instanceMatrix.needsUpdate = true
+    if (groundRef.current.instanceColor) {
+      groundRef.current.instanceColor.needsUpdate = true
     }
-  }, [tiles])
+  }, [groundTiles, config])
+
+  // ---- Set obstacle instance transforms and colors ----
+  useEffect(() => {
+    if (!obstacleRef.current || obstacleTiles.length === 0) return
+
+    const dummy = new Object3D()
+    const matrix = new Matrix4()
+
+    for (let i = 0; i < obstacleTiles.length; i++) {
+      const pos = gridToWorld(obstacleTiles[i]!.coord, config)
+      // ---- Raise obstacles so their base sits on the ground plane ----
+      dummy.position.set(pos.x, OBSTACLE_HEIGHT / 2, pos.z)
+      dummy.updateMatrix()
+      matrix.copy(dummy.matrix)
+      obstacleRef.current.setMatrixAt(i, matrix)
+      obstacleRef.current.setColorAt(i, OBSTACLE_COLOR)
+    }
+
+    obstacleRef.current.instanceMatrix.needsUpdate = true
+    if (obstacleRef.current.instanceColor) {
+      obstacleRef.current.instanceColor.needsUpdate = true
+    }
+  }, [obstacleTiles, config])
 
   return (
     <group rotation={[0, ROTATION_Y, 0]}>
-      <instancedMesh ref={meshRef} args={[undefined, undefined, tiles.length]}>
-        <boxGeometry
-          args={[
-            DEFAULT_GRID_CONFIG.tileSize,
-            TILE_HEIGHT,
-            DEFAULT_GRID_CONFIG.tileSize,
-          ]}
-        />
-        <meshStandardMaterial />
-      </instancedMesh>
+      {groundTiles.length > 0 && (
+        <instancedMesh
+          ref={groundRef}
+          args={[undefined, undefined, groundTiles.length]}
+        >
+          <boxGeometry
+            args={[config.tileSize, GROUND_HEIGHT, config.tileSize]}
+          />
+          <meshStandardMaterial />
+        </instancedMesh>
+      )}
+      {obstacleTiles.length > 0 && (
+        <instancedMesh
+          ref={obstacleRef}
+          args={[undefined, undefined, obstacleTiles.length]}
+        >
+          <boxGeometry
+            args={[config.tileSize, OBSTACLE_HEIGHT, config.tileSize]}
+          />
+          <meshStandardMaterial />
+        </instancedMesh>
+      )}
     </group>
   )
 }

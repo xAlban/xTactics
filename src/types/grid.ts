@@ -10,15 +10,29 @@ export interface TilePosition {
   z: number
 }
 
+// ---- Tile type: ground is walkable, obstacle blocks movement ----
+export type TileType = 'ground' | 'obstacle'
+
 // ---- Configuration for generating the grid ----
 export interface GridConfig {
-  size: number
+  width: number
+  height: number
   tileSize: number
   tileGap: number
 }
 
-// ---- Data for a single tile (coord + computed index) ----
+// ---- Data for a single tile (coord + type + computed index) ----
 export interface TileData {
   coord: TileCoord
+  type: TileType
   index: number
+}
+
+// ---- Map definition using string layout for easy authoring ----
+// ---- Layout chars: '.' = ground, 'X' = obstacle, ' ' = no tile ----
+export interface CombatMapDefinition {
+  name: string
+  layout: string[]
+  tileSize: number
+  tileGap: number
 }
