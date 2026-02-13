@@ -2,11 +2,11 @@ import { useRef, useCallback, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { ShaderMaterial, Color } from 'three'
 import type { Mesh, Intersection } from 'three'
-import IsometricCamera from '@/game/camera/IsometricCamera'
+import FollowCamera from '@/game/camera/FollowCamera'
 import CombatPortal from '@/game/objects/CombatPortal'
 import { useGameModeStore } from '@/stores/gameModeStore'
 
-const FLOOR_SIZE = 200
+const FLOOR_SIZE = 500 // Increased size for more "infinite" feel
 const MOVE_SPEED = 5
 const ARRIVAL_THRESHOLD = 0.05
 
@@ -34,6 +34,7 @@ function NormalScene() {
   const player = useGameModeStore((s) => s.player)
   const setTargetPosition = useGameModeStore((s) => s.setTargetPosition)
   const setPlayerPosition = useGameModeStore((s) => s.setPlayerPosition)
+  const updatePlayerPosition = useGameModeStore((s) => s.updatePlayerPosition)
 
   // ---- Sync store target into local ref for useFrame access ----
   targetRef.current = targetPosition
@@ -61,6 +62,8 @@ function NormalScene() {
         const step = Math.min(delta * MOVE_SPEED, dist)
         posRef.current.x += (dx / dist) * step
         posRef.current.z += (dz / dist) * step
+        // ---- Update store so camera can follow ----
+        updatePlayerPosition({ x: posRef.current.x, z: posRef.current.z })
       }
     }
 
@@ -118,7 +121,7 @@ function NormalScene() {
 
   return (
     <>
-      <IsometricCamera />
+      <FollowCamera />
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <directionalLight position={[-5, 8, -5]} intensity={0.4} />

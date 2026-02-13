@@ -50,4 +50,13 @@ describe('gameModeStore', () => {
     expect(state.playerPosition).toEqual({ x: 5, z: 3 })
     expect(state.targetPosition).toBeNull()
   })
+
+  it('updates player position without clearing target', () => {
+    useGameModeStore.getState().setTargetPosition({ x: 10, z: 10 })
+    useGameModeStore.getState().updatePlayerPosition({ x: 5, z: 5 })
+
+    const state = useGameModeStore.getState()
+    expect(state.playerPosition).toEqual({ x: 5, z: 5 })
+    expect(state.targetPosition).toEqual({ x: 10, z: 10 })
+  })
 })

@@ -16,6 +16,7 @@ interface GameModeState {
   exitCombat: () => void
   setTargetPosition: (pos: { x: number; z: number }) => void
   setPlayerPosition: (pos: { x: number; z: number }) => void
+  updatePlayerPosition: (pos: { x: number; z: number }) => void
 }
 
 export const useGameModeStore = create<GameModeState>((set) => ({
@@ -32,4 +33,6 @@ export const useGameModeStore = create<GameModeState>((set) => ({
 
   setPlayerPosition: (pos) =>
     set({ playerPosition: pos, targetPosition: null }),
+
+  updatePlayerPosition: (pos) => set({ playerPosition: pos }),
 }))

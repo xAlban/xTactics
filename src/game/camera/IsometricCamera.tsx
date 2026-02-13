@@ -3,7 +3,7 @@ import { MOUSE } from 'three'
 
 // ---- Isometric elevation: ~35.264° (arctan(1/√2)) ----
 const ISOMETRIC_POLAR_ANGLE = Math.atan(Math.SQRT2)
-const DISTANCE = 10
+const DISTANCE = 100
 
 const INITIAL_X = DISTANCE * Math.cos(Math.PI / 4)
 const INITIAL_Y = DISTANCE * Math.sin(Math.atan(Math.SQRT2))
@@ -16,13 +16,13 @@ function IsometricCamera() {
         makeDefault
         zoom={50}
         position={[INITIAL_X, INITIAL_Y, INITIAL_Z]}
-        near={0.1}
-        far={1000}
+        near={-1000}
+        far={2000}
       />
       <OrbitControls
         makeDefault
         enableZoom={true}
-        enablePan={false}
+        enablePan={true}
         enableRotate={true}
         // ---- Zoom bounds for orthographic camera ----
         minZoom={20}
@@ -31,7 +31,7 @@ function IsometricCamera() {
         mouseButtons={{
           LEFT: -1 as MOUSE,
           MIDDLE: MOUSE.ROTATE,
-          RIGHT: -1 as MOUSE,
+          RIGHT: MOUSE.PAN,
         }}
         // ---- Lock polar angle to keep the isometric tilt ----
         minPolarAngle={ISOMETRIC_POLAR_ANGLE}
