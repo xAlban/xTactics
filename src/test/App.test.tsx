@@ -11,6 +11,16 @@ vi.mock('@react-three/fiber', () => ({
 
 vi.mock('@react-three/drei', () => ({
   OrthographicCamera: () => null,
+  OrbitControls: () => null,
+}))
+
+// ---- Mock map components that rely on Three.js APIs ----
+vi.mock('@/game/map/GridFloor', () => ({
+  default: () => <div data-testid="grid-floor" />,
+}))
+
+vi.mock('@/game/map/TestCube', () => ({
+  default: () => <div data-testid="test-cube" />,
 }))
 
 describe('App', () => {
