@@ -7,6 +7,7 @@ vi.mock('@react-three/fiber', () => ({
   Canvas: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="r3f-canvas">{children}</div>
   ),
+  useFrame: () => null,
 }))
 
 vi.mock('@react-three/drei', () => ({
@@ -19,8 +20,13 @@ vi.mock('@/game/map/GridFloor', () => ({
   default: () => <div data-testid="grid-floor" />,
 }))
 
-vi.mock('@/game/map/TestCube', () => ({
-  default: () => <div data-testid="test-cube" />,
+// ---- Mock 3D unit and path components ----
+vi.mock('@/game/units/UnitCube', () => ({
+  default: () => <div data-testid="unit-cube" />,
+}))
+
+vi.mock('@/game/combat/PathPreview', () => ({
+  default: () => <div data-testid="path-preview" />,
 }))
 
 describe('App', () => {
