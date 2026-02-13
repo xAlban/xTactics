@@ -38,6 +38,8 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
       s.hoveredTile.col === tile.coord.col &&
       s.hoveredTile.row === tile.coord.row,
   )
+  // ---- Only show reachable zone when a tile in range is hovered ----
+  const hasHover = useCombatStore((s) => s.hoveredTile !== null)
 
   const setHoveredTile = useCombatStore((s) => s.setHoveredTile)
   const executeMove = useCombatStore((s) => s.executeMove)
@@ -47,7 +49,7 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
     ? COLOR_HOVERED
     : isOnPath
       ? COLOR_PATH
-      : isReachable
+      : isReachable && hasHover
         ? COLOR_REACHABLE
         : COLOR_DEFAULT
 

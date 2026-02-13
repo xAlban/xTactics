@@ -120,8 +120,16 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       return
     }
 
+    const activeUnit = units[activeUnitIndex]
+    if (!activeUnit) return
+
     const key = coordKey(coord)
-    if (!reachableTileKeys.has(key)) {
+    const isOwnTile =
+      coord.col === activeUnit.position.col &&
+      coord.row === activeUnit.position.row
+
+    // ---- Allow hover on active unit's tile to reveal reachable zone ----
+    if (!reachableTileKeys.has(key) && !isOwnTile) {
       set({
         hoveredTile: null,
         previewPath: [],
@@ -130,8 +138,10 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       return
     }
 
-    const activeUnit = units[activeUnitIndex]
-    if (!activeUnit) return
+    if (isOwnTile) {
+      set({ hoveredTile: coord, previewPath: [], previewPathKeys: new Set() })
+      return
+    }
 
     // ---- Rebuild BFS to reconstruct path to hovered tile ----
     const occupied = units
