@@ -5,6 +5,7 @@ import type { Mesh, Intersection } from 'three'
 import FollowCamera from '@/game/camera/FollowCamera'
 import CombatPortal from '@/game/objects/CombatPortal'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import { PORTAL_COMBAT_SETUP } from '@/game/combat/combatSetups'
 
 const FLOOR_SIZE = 500 // Increased size for more "infinite" feel
 const MOVE_SPEED = 5
@@ -146,7 +147,10 @@ function NormalScene() {
       </mesh>
 
       {/* ---- Combat trigger portal ---- */}
-      <CombatPortal position={PORTAL_POSITION} />
+      <CombatPortal
+        position={PORTAL_POSITION}
+        combatSetup={PORTAL_COMBAT_SETUP}
+      />
     </>
   )
 }

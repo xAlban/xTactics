@@ -39,9 +39,7 @@ export default function UIGridOverlay() {
   const openPanels = useUILayoutStore((s) => s.openPanels)
   const closePanel = useUILayoutStore((s) => s.closePanel)
   const layouts = mode === 'normal' ? normalLayout : combatLayout
-  const updatePanelLayout = useUILayoutStore(
-    (s) => s.updatePanelLayout,
-  )
+  const updatePanelLayout = useUILayoutStore((s) => s.updatePanelLayout)
 
   const handleLayoutChange = useCallback(
     (panelId: string, layout: PanelLayout) => {

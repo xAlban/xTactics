@@ -1,7 +1,10 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { OrbitControls, OrthographicCamera } from '@react-three/drei'
-import { MOUSE, type OrthographicCamera as ThreeOrthographicCamera } from 'three'
+import {
+  MOUSE,
+  type OrthographicCamera as ThreeOrthographicCamera,
+} from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { useGameModeStore } from '@/stores/gameModeStore'
 
@@ -28,9 +31,12 @@ function FollowCamera() {
     const targetZ = playerPosition.z + INITIAL_Z
 
     // ---- Smoothly interpolate camera position ----
-    cameraRef.current.position.x += (targetX - cameraRef.current.position.x) * LERP_FACTOR
-    cameraRef.current.position.y += (targetY - cameraRef.current.position.y) * LERP_FACTOR
-    cameraRef.current.position.z += (targetZ - cameraRef.current.position.z) * LERP_FACTOR
+    cameraRef.current.position.x +=
+      (targetX - cameraRef.current.position.x) * LERP_FACTOR
+    cameraRef.current.position.y +=
+      (targetY - cameraRef.current.position.y) * LERP_FACTOR
+    cameraRef.current.position.z +=
+      (targetZ - cameraRef.current.position.z) * LERP_FACTOR
 
     // ---- Update OrbitControls target to follow player smoothly ----
     if (controlsRef.current) {
@@ -72,7 +78,6 @@ function FollowCamera() {
         target={[playerPosition.x, 0, playerPosition.z]}
       />
     </>
-
   )
 }
 

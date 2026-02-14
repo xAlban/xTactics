@@ -1,5 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import type { CombatSetup } from '@/types/combat'
+
+// ---- Minimal combat setup for testing mode switching ----
+const TEST_SETUP: CombatSetup = {
+  map: {
+    name: 'Test',
+    layout: ['...', '...', '...'],
+    tileSize: 1,
+    tileGap: 0,
+  },
+  playerStartPositions: [{ col: 1, row: 1 }],
+  enemies: [],
+}
 
 // ---- Reset store state before each test ----
 beforeEach(() => {
@@ -7,6 +20,7 @@ beforeEach(() => {
     mode: 'normal',
     playerPosition: { x: 0, z: 0 },
     targetPosition: null,
+    activeCombatSetup: null,
   })
 })
 
@@ -23,18 +37,21 @@ describe('gameModeStore', () => {
     expect(state.player.playerClass).toBe('bomberman')
   })
 
-  it('enters combat mode', () => {
-    useGameModeStore.getState().enterCombat()
-    expect(useGameModeStore.getState().mode).toBe('combat')
+  it('enters combat mode with setup', () => {
+    useGameModeStore.getState().enterCombat(TEST_SETUP)
+    const state = useGameModeStore.getState()
+    expect(state.mode).toBe('combat')
+    expect(state.activeCombatSetup).toBe(TEST_SETUP)
   })
 
   it('exits combat mode back to normal', () => {
-    useGameModeStore.getState().enterCombat()
+    useGameModeStore.getState().enterCombat(TEST_SETUP)
     useGameModeStore.getState().exitCombat()
 
     const state = useGameModeStore.getState()
     expect(state.mode).toBe('normal')
     expect(state.targetPosition).toBeNull()
+    expect(state.activeCombatSetup).toBeNull()
   })
 
   it('sets target position for click-to-move', () => {

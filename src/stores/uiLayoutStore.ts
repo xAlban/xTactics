@@ -73,8 +73,7 @@ export const useUILayoutStore = create<UILayoutState>()(
 
       updatePanelLayout: (mode, panelId, layout) =>
         set((state) => {
-          const key =
-            mode === 'normal' ? 'normalLayout' : 'combatLayout'
+          const key = mode === 'normal' ? 'normalLayout' : 'combatLayout'
           return {
             [key]: { ...state[key], [panelId]: layout },
           }
@@ -90,9 +89,7 @@ export const useUILayoutStore = create<UILayoutState>()(
 
       getLayout: (mode) => {
         const state = get()
-        return mode === 'normal'
-          ? state.normalLayout
-          : state.combatLayout
+        return mode === 'normal' ? state.normalLayout : state.combatLayout
       },
 
       togglePanel: (panelId) =>

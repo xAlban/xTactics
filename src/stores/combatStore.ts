@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import type { TileCoord, TileData } from '@/types/grid'
-import type { CombatUnit, Path, TurnPhase } from '@/types/combat'
+import type {
+  CombatUnit,
+  Path,
+  TurnPhase,
+  CombatStatus,
+  CombatSetup,
+  UnitTeam,
+} from '@/types/combat'
 import type { Player } from '@/types/player'
 import {
   coordKey,
@@ -9,6 +16,14 @@ import {
   getReachableCoords,
   reconstructPath,
 } from '@/game/combat/pathfinding'
+import { createEnemy } from '@/game/units/playerFactory'
+import { generateGridTiles } from '@/game/map/gridUtils'
+
+// ---- Turn timer duration in seconds ----
+const TURN_TIMER_DURATION = 30
+
+// ---- Default HP for units (until proper health system) ----
+const DEFAULT_HP = 50
 
 interface CombatState {
   // ---- Combat units and turn tracking ----
@@ -16,6 +31,13 @@ interface CombatState {
   activeUnitIndex: number
   turnPhase: TurnPhase
   turnNumber: number
+
+  // ---- Combat status ----
+  combatStatus: CombatStatus
+
+  // ---- Turn timer ----
+  turnTimeRemaining: number
+  _timerInterval: ReturnType<typeof setInterval> | null
 
   // ---- Map tiles (set once at combat init) ----
   tiles: TileData[]
@@ -34,16 +56,34 @@ interface CombatState {
   isMoving: boolean
 
   // ---- Actions ----
-  initCombat: (
-    players: Player[],
-    startPositions: TileCoord[],
-    tiles: TileData[],
-  ) => void
+  initCombat: (setup: CombatSetup, players: Player[]) => void
   computeReachable: () => void
   setHoveredTile: (coord: TileCoord | null) => void
   executeMove: (target: TileCoord) => void
   setIsMoving: (moving: boolean) => void
   endTurn: () => void
+  passTurn: () => void
+  startTurnTimer: () => void
+  clearTurnTimer: () => void
+  tickTimer: () => void
+  checkCombatEnd: () => CombatStatus
+  _processNextUnit: () => void
+}
+
+// ---- Helper: check if the active unit belongs to the player team ----
+function isPlayerTurn(units: CombatUnit[], activeUnitIndex: number): boolean {
+  const unit = units[activeUnitIndex]
+  return unit !== undefined && unit.team === 'player'
+}
+
+// ---- Helper: find next alive unit index ----
+function findNextAliveUnit(units: CombatUnit[], currentIndex: number): number {
+  const count = units.length
+  for (let i = 1; i <= count; i++) {
+    const idx = (currentIndex + i) % count
+    if (!units[idx]!.defeated) return idx
+  }
+  return currentIndex
 }
 
 export const useCombatStore = create<CombatState>((set, get) => ({
@@ -51,6 +91,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   activeUnitIndex: 0,
   turnPhase: 'movement',
   turnNumber: 1,
+  combatStatus: 'active',
+  turnTimeRemaining: TURN_TIMER_DURATION,
+  _timerInterval: null,
   tiles: [],
   reachableTiles: [],
   reachableTileKeys: new Set(),
@@ -60,28 +103,75 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   movementPath: [],
   isMoving: false,
 
-  initCombat: (players, startPositions, tiles) => {
-    const units: CombatUnit[] = players.map((player, i) => ({
+  initCombat: (setup, players) => {
+    // ---- Clear any existing timer ----
+    get().clearTurnTimer()
+
+    // ---- Create player units ----
+    const playerUnits: CombatUnit[] = players.map((player, i) => ({
       player,
-      position: startPositions[i]!,
+      position: setup.playerStartPositions[i]!,
       currentAp: player.baseAp,
       currentMp: player.baseMp,
+      currentHp: DEFAULT_HP,
+      maxHp: DEFAULT_HP,
+      team: 'player' as UnitTeam,
+      defeated: false,
     }))
 
-    set({ units, tiles, activeUnitIndex: 0, turnNumber: 1 })
+    // ---- Create enemy units from setup ----
+    const enemyUnits: CombatUnit[] = setup.enemies.map((enemy) => {
+      const enemyPlayer = createEnemy(enemy.id, enemy.name)
+      return {
+        player: enemyPlayer,
+        position: enemy.position,
+        currentAp: enemyPlayer.baseAp,
+        currentMp: enemyPlayer.baseMp,
+        currentHp: DEFAULT_HP,
+        maxHp: DEFAULT_HP,
+        team: 'enemy' as UnitTeam,
+        defeated: false,
+      }
+    })
+
+    // ---- Players first, then enemies in turn order ----
+    const units = [...playerUnits, ...enemyUnits]
+
+    // ---- Generate tiles from the map definition ----
+    const tiles = generateGridTiles(setup.map)
+
+    set({
+      units,
+      tiles,
+      activeUnitIndex: 0,
+      turnNumber: 1,
+      turnPhase: 'movement',
+      combatStatus: 'active',
+      turnTimeRemaining: TURN_TIMER_DURATION,
+      movementPath: [],
+      isMoving: false,
+    })
 
     // ---- Compute reachable tiles for first active unit ----
     get().computeReachable()
+
+    // ---- Start timer if first unit is a player ----
+    if (units[0] && units[0].team === 'player') {
+      get().startTurnTimer()
+    }
   },
 
   computeReachable: () => {
-    const { units, activeUnitIndex, tiles } = get()
+    const { units, activeUnitIndex, tiles, combatStatus } = get()
+    if (combatStatus !== 'active') return
+
     const activeUnit = units[activeUnitIndex]
-    if (!activeUnit) return
+    if (!activeUnit || activeUnit.defeated) return
 
     // ---- Build occupied set excluding the active unit itself ----
     const occupied = units
       .filter((_, i) => i !== activeUnitIndex)
+      .filter((u) => !u.defeated)
       .map((u) => u.position)
 
     const walkable = buildWalkableSet(tiles, occupied)
@@ -106,10 +196,20 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   },
 
   setHoveredTile: (coord) => {
-    const { reachableTileKeys, units, activeUnitIndex, tiles, isMoving } = get()
+    const {
+      reachableTileKeys,
+      units,
+      activeUnitIndex,
+      tiles,
+      isMoving,
+      combatStatus,
+    } = get()
 
-    // ---- Ignore hover during movement animation ----
-    if (isMoving) return
+    // ---- Ignore hover during movement animation or when combat is over ----
+    if (isMoving || combatStatus !== 'active') return
+
+    // ---- Only allow interaction on player turns ----
+    if (!isPlayerTurn(units, activeUnitIndex)) return
 
     if (!coord) {
       set({
@@ -139,13 +239,18 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     }
 
     if (isOwnTile) {
-      set({ hoveredTile: coord, previewPath: [], previewPathKeys: new Set() })
+      set({
+        hoveredTile: coord,
+        previewPath: [],
+        previewPathKeys: new Set(),
+      })
       return
     }
 
     // ---- Rebuild BFS to reconstruct path to hovered tile ----
     const occupied = units
       .filter((_, i) => i !== activeUnitIndex)
+      .filter((u) => !u.defeated)
       .map((u) => u.position)
     const walkable = buildWalkableSet(tiles, occupied)
     walkable.add(coordKey(activeUnit.position))
@@ -162,8 +267,11 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   },
 
   executeMove: (target) => {
-    const { units, activeUnitIndex, tiles, isMoving } = get()
-    if (isMoving) return
+    const { units, activeUnitIndex, tiles, isMoving, combatStatus } = get()
+    if (isMoving || combatStatus !== 'active') return
+
+    // ---- Only allow movement on player turns ----
+    if (!isPlayerTurn(units, activeUnitIndex)) return
 
     const activeUnit = units[activeUnitIndex]
     if (!activeUnit) return
@@ -171,6 +279,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     // ---- Rebuild BFS and reconstruct path ----
     const occupied = units
       .filter((_, i) => i !== activeUnitIndex)
+      .filter((u) => !u.defeated)
       .map((u) => u.position)
     const walkable = buildWalkableSet(tiles, occupied)
     walkable.add(coordKey(activeUnit.position))
@@ -215,8 +324,14 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   },
 
   endTurn: () => {
-    const { units, activeUnitIndex } = get()
-    const nextIndex = (activeUnitIndex + 1) % units.length
+    const { units, activeUnitIndex, combatStatus } = get()
+    if (combatStatus !== 'active') return
+
+    // ---- Clear timer for the current turn ----
+    get().clearTurnTimer()
+
+    // ---- Find next alive unit ----
+    const nextIndex = findNextAliveUnit(units, activeUnitIndex)
 
     // ---- Reset the next unit's AP/MP to their base values ----
     const updatedUnits = [...units]
@@ -232,9 +347,87 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       activeUnitIndex: nextIndex,
       turnPhase: 'movement',
       turnNumber: get().turnNumber + 1,
+      turnTimeRemaining: TURN_TIMER_DURATION,
       movementPath: [],
+      hoveredTile: null,
+      previewPath: [],
+      previewPathKeys: new Set(),
     })
 
     get().computeReachable()
+
+    // ---- Process the next unit (auto-pass if enemy) ----
+    get()._processNextUnit()
+  },
+
+  passTurn: () => {
+    const { combatStatus } = get()
+    if (combatStatus !== 'active') return
+    get().endTurn()
+  },
+
+  startTurnTimer: () => {
+    get().clearTurnTimer()
+
+    const interval = setInterval(() => {
+      get().tickTimer()
+    }, 1000)
+
+    set({ _timerInterval: interval, turnTimeRemaining: TURN_TIMER_DURATION })
+  },
+
+  clearTurnTimer: () => {
+    const { _timerInterval } = get()
+    if (_timerInterval !== null) {
+      clearInterval(_timerInterval)
+      set({ _timerInterval: null })
+    }
+  },
+
+  tickTimer: () => {
+    const { turnTimeRemaining, combatStatus } = get()
+    if (combatStatus !== 'active') {
+      get().clearTurnTimer()
+      return
+    }
+
+    const newTime = turnTimeRemaining - 1
+    if (newTime <= 0) {
+      // ---- Timer expired, auto-end the turn ----
+      get().endTurn()
+    } else {
+      set({ turnTimeRemaining: newTime })
+    }
+  },
+
+  checkCombatEnd: () => {
+    const { units } = get()
+
+    const aliveEnemies = units.filter((u) => u.team === 'enemy' && !u.defeated)
+    const alivePlayers = units.filter((u) => u.team === 'player' && !u.defeated)
+
+    if (aliveEnemies.length === 0) return 'victory'
+    if (alivePlayers.length === 0) return 'defeat'
+    return 'active'
+  },
+
+  _processNextUnit: () => {
+    const { units, activeUnitIndex, combatStatus } = get()
+    if (combatStatus !== 'active') return
+
+    const nextUnit = units[activeUnitIndex]
+    if (!nextUnit) return
+
+    if (nextUnit.team === 'enemy') {
+      // ---- Enemies auto-pass after a short delay for visual feedback ----
+      setTimeout(() => {
+        const current = get()
+        if (current.combatStatus !== 'active') return
+        current.endTurn()
+      }, 500)
+    } else {
+      // ---- Player turn: start the timer ----
+      get().startTurnTimer()
+    }
   },
 }))

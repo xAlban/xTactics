@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import type { CombatSetup } from '@/types/combat'
 
 const PORTAL_COLOR = '#e74c3c'
 const PORTAL_HOVER_COLOR = '#ff6b6b'
@@ -9,9 +10,10 @@ const ROTATION_SPEED = 1.5
 
 interface CombatPortalProps {
   position: [number, number, number]
+  combatSetup: CombatSetup
 }
 
-function CombatPortal({ position }: CombatPortalProps) {
+function CombatPortal({ position, combatSetup }: CombatPortalProps) {
   const meshRef = useRef<Mesh>(null)
   const [hovered, setHovered] = useState(false)
   const enterCombat = useGameModeStore((s) => s.enterCombat)
@@ -25,9 +27,9 @@ function CombatPortal({ position }: CombatPortalProps) {
   const handleClick = useCallback(
     (e: { stopPropagation: () => void }) => {
       e.stopPropagation()
-      enterCombat()
+      enterCombat(combatSetup)
     },
-    [enterCombat],
+    [enterCombat, combatSetup],
   )
 
   const handlePointerOver = useCallback(

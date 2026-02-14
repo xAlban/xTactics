@@ -114,8 +114,7 @@ describe('uiLayoutStore', () => {
   })
 
   it('resets normal layout to defaults', () => {
-    const { updatePanelLayout, resetLayout } =
-      useUILayoutStore.getState()
+    const { updatePanelLayout, resetLayout } = useUILayoutStore.getState()
 
     // ---- Move panel ----
     updatePanelLayout('normal', PANEL_IDS.MAP, {
@@ -138,8 +137,7 @@ describe('uiLayoutStore', () => {
   })
 
   it('resets combat layout to defaults', () => {
-    const { updatePanelLayout, resetLayout } =
-      useUILayoutStore.getState()
+    const { updatePanelLayout, resetLayout } = useUILayoutStore.getState()
 
     updatePanelLayout('combat', PANEL_IDS.BUTTON_ROW, {
       gridCol: 0,
@@ -160,8 +158,7 @@ describe('uiLayoutStore', () => {
   })
 
   it('getLayout returns the correct layout for each mode', () => {
-    const { getLayout, updatePanelLayout } =
-      useUILayoutStore.getState()
+    const { getLayout, updatePanelLayout } = useUILayoutStore.getState()
 
     updatePanelLayout('normal', PANEL_IDS.MAP, {
       gridCol: 1,

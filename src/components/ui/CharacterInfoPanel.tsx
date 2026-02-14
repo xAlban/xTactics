@@ -9,9 +9,7 @@ export default function CharacterInfoPanel() {
         Character
       </span>
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-white">
-          {player.name}
-        </span>
+        <span className="text-sm font-medium text-white">{player.name}</span>
         <span className="text-xs capitalize text-white/60">
           {player.playerClass} · Lv.{player.levelProgress.level}
         </span>

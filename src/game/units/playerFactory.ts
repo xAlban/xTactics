@@ -56,6 +56,24 @@ export function createPlayer(
   }
 }
 
+// ---- Create a dummy enemy with basic stats ----
+export function createEnemy(id: string, name: string): Player {
+  return {
+    id,
+    name,
+    playerClass: 'knight',
+    levelProgress: {
+      level: 1,
+      currentXp: 0,
+      xpToNextLevel: xpForLevel(1),
+    },
+    baseAp: 6,
+    baseMp: 3,
+    bonusStats: createDefaultBonusStats(),
+    equipment: createEmptyEquipment(),
+  }
+}
+
 // ---- Add XP with overflow handling for multi-level-ups ----
 export function addXp(
   levelProgress: LevelProgress,

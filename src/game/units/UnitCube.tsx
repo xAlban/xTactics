@@ -3,12 +3,12 @@ import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
 import type { TileCoord, GridConfig } from '@/types/grid'
 import type { PlayerClass } from '@/types/player'
-import type { Path } from '@/types/combat'
+import type { Path, UnitTeam } from '@/types/combat'
 import { gridToWorld } from '@/game/map/gridUtils'
 
 const TILE_HEIGHT = 0.08
 
-// ---- Color per class ----
+// ---- Color per class for player units ----
 const CLASS_COLORS: Record<PlayerClass, string> = {
   bomberman: '#c0392b',
   archer: '#27ae60',
@@ -16,21 +16,26 @@ const CLASS_COLORS: Record<PlayerClass, string> = {
   mage: '#8e44ad',
 }
 
+// ---- Enemy unit color ----
+const ENEMY_COLOR = '#8b0000'
+
 // ---- Movement speed in tiles per second ----
 const MOVE_SPEED = 4
 
 interface UnitCubeProps {
   position: TileCoord
   playerClass: PlayerClass
+  team: UnitTeam
   config: GridConfig
   movementPath: Path
   isMoving: boolean
-  onMoveComplete: () => void
+  onMoveComplete?: () => void
 }
 
 function UnitCube({
   position,
   playerClass,
+  team,
   config,
   movementPath,
   isMoving,
@@ -61,7 +66,7 @@ function UnitCube({
 
       if (nextIdx >= movementPath.length) {
         // ---- Animation complete ----
-        onMoveComplete()
+        onMoveComplete?.()
         return
       }
 
@@ -97,7 +102,9 @@ function UnitCube({
       position={[worldPos.x, TILE_HEIGHT / 2 + cubeSize / 2, worldPos.z]}
     >
       <boxGeometry args={[cubeSize, cubeSize, cubeSize]} />
-      <meshStandardMaterial color={CLASS_COLORS[playerClass]} />
+      <meshStandardMaterial
+        color={team === 'enemy' ? ENEMY_COLOR : CLASS_COLORS[playerClass]}
+      />
     </mesh>
   )
 }

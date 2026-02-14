@@ -21,9 +21,7 @@ export default function CharacterSheetPanel() {
 
       {/* ---- Identity ---- */}
       <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-medium text-white">
-          {player.name}
-        </span>
+        <span className="text-sm font-medium text-white">{player.name}</span>
         <span className="text-xs capitalize text-white/60">
           {player.playerClass} · Lv.
           {player.levelProgress.level}
@@ -44,10 +42,7 @@ export default function CharacterSheetPanel() {
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-bold text-white/50">Stats</span>
         {(Object.keys(STAT_LABELS) as StatKey[]).map((key) => (
-          <div
-            key={key}
-            className="flex justify-between text-xs text-white/60"
-          >
+          <div key={key} className="flex justify-between text-xs text-white/60">
             <span>{STAT_LABELS[key]}</span>
             <span>{player.bonusStats[key]}</span>
           </div>
@@ -56,18 +51,14 @@ export default function CharacterSheetPanel() {
 
       {/* ---- Equipment ---- */}
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs font-bold text-white/50">
-          Equipment
-        </span>
+        <span className="text-xs font-bold text-white/50">Equipment</span>
         {Object.entries(player.equipment).map(([slot, item]) => (
           <div
             key={slot}
             className="flex justify-between text-xs text-white/60"
           >
             <span className="capitalize">{slot}</span>
-            <span className="text-white/40">
-              {item ? item.name : '—'}
-            </span>
+            <span className="text-white/40">{item ? item.name : '—'}</span>
           </div>
         ))}
       </div>

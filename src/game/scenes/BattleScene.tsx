@@ -3,24 +3,29 @@ import IsometricCamera from '@/game/camera/IsometricCamera'
 import GridFloor from '@/game/map/GridFloor'
 import UnitCube from '@/game/units/UnitCube'
 import PathPreview from '@/game/combat/PathPreview'
-import { ARENA_SMALL } from '@/game/map/combatMaps'
-import { generateGridTiles, mapToGridConfig } from '@/game/map/gridUtils'
+import { mapToGridConfig } from '@/game/map/gridUtils'
 import { useCombatStore } from '@/stores/combatStore'
 import { useGameModeStore } from '@/stores/gameModeStore'
 
 const ROTATION_Y = Math.PI / 4
 
 function BattleScene() {
-  const config = useMemo(() => mapToGridConfig(ARENA_SMALL), [])
   const player = useGameModeStore((s) => s.player)
+  const setup = useGameModeStore((s) => s.activeCombatSetup)
 
-  // ---- Init combat with the player from game mode store ----
+  const config = useMemo(
+    () => (setup ? mapToGridConfig(setup.map) : null),
+    [setup],
+  )
+
+  // ---- Init combat with the setup from game mode store ----
   useEffect(() => {
-    const tiles = generateGridTiles(ARENA_SMALL)
-    useCombatStore.getState().initCombat([player], [{ col: 3, row: 4 }], tiles)
-  }, [player])
+    if (!setup) return
+    useCombatStore.getState().initCombat(setup, [player])
+  }, [player, setup])
 
   const units = useCombatStore((s) => s.units)
+  const activeUnitIndex = useCombatStore((s) => s.activeUnitIndex)
   const movementPath = useCombatStore((s) => s.movementPath)
   const isMoving = useCombatStore((s) => s.isMoving)
   const previewPath = useCombatStore((s) => s.previewPath)
@@ -30,6 +35,8 @@ function BattleScene() {
     setIsMoving(false)
   }, [setIsMoving])
 
+  if (!setup || !config) return null
+
   return (
     <>
       <IsometricCamera />
@@ -37,20 +44,26 @@ function BattleScene() {
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <directionalLight position={[-5, 8, -5]} intensity={0.4} />
 
-      <GridFloor map={ARENA_SMALL} />
+      <GridFloor map={setup.map} />
 
       <group rotation={[0, ROTATION_Y, 0]}>
-        {units.map((unit) => (
-          <UnitCube
-            key={unit.player.id}
-            position={unit.position}
-            playerClass={unit.player.playerClass}
-            config={config}
-            movementPath={movementPath}
-            isMoving={isMoving}
-            onMoveComplete={handleMoveComplete}
-          />
-        ))}
+        {units.map((unit, i) => {
+          if (unit.defeated) return null
+          // ---- Only animate the active unit's movement ----
+          const isActive = i === activeUnitIndex
+          return (
+            <UnitCube
+              key={unit.player.id}
+              position={unit.position}
+              playerClass={unit.player.playerClass}
+              team={unit.team}
+              config={config}
+              movementPath={isActive ? movementPath : []}
+              isMoving={isActive && isMoving}
+              onMoveComplete={isActive ? handleMoveComplete : undefined}
+            />
+          )
+        })}
         <PathPreview path={previewPath} config={config} />
       </group>
     </>

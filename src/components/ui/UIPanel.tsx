@@ -105,16 +105,8 @@ export default function UIPanel({
           ? Math.round(rawY / cell.h)
           : rawY / cell.h
 
-        const clampedCol = clamp(
-          col,
-          0,
-          UI_GRID_COLS - layout.gridWidth,
-        )
-        const clampedRow = clamp(
-          row,
-          0,
-          UI_GRID_ROWS - layout.gridHeight,
-        )
+        const clampedCol = clamp(col, 0, UI_GRID_COLS - layout.gridWidth)
+        const clampedRow = clamp(row, 0, UI_GRID_ROWS - layout.gridHeight)
 
         setTempPos(null)
         onLayoutChange({
@@ -224,25 +216,15 @@ export default function UIPanel({
 
         // ---- Adjust position so the opposite edge stays anchored ----
         if (corner === 'nw' || corner === 'sw') {
-          snappedCol =
-            layout.gridCol + layout.gridWidth - snappedW
+          snappedCol = layout.gridCol + layout.gridWidth - snappedW
         }
         if (corner === 'nw' || corner === 'ne') {
-          snappedRow =
-            layout.gridRow + layout.gridHeight - snappedH
+          snappedRow = layout.gridRow + layout.gridHeight - snappedH
         }
 
         // ---- Keep within screen bounds ----
-        snappedCol = clamp(
-          snappedCol,
-          0,
-          UI_GRID_COLS - snappedW,
-        )
-        snappedRow = clamp(
-          snappedRow,
-          0,
-          UI_GRID_ROWS - snappedH,
-        )
+        snappedCol = clamp(snappedCol, 0, UI_GRID_COLS - snappedW)
+        snappedRow = clamp(snappedRow, 0, UI_GRID_ROWS - snappedH)
 
         setTempRect(null)
         onLayoutChange({
