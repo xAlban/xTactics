@@ -44,6 +44,19 @@ export default function ButtonRowPanel() {
         </span>
       )}
 
+      {mode === 'combat' && combatStatus === 'active' && isPlayerTurn && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            togglePanel(PANEL_IDS.SPELL_PANEL)
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className={btnClass}
+        >
+          Spells
+        </button>
+      )}
+
       {mode === 'combat' && (
         <button
           onClick={(e) => {

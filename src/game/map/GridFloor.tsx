@@ -15,11 +15,15 @@ const OBSTACLE_HEIGHT = 0.4
 const OBSTACLE_COLOR = new Color('#2c2c2c')
 const ROTATION_Y = Math.PI / 4
 
-// ---- Tile color constants ----
+// ---- Movement range colors (green) ----
 const COLOR_DEFAULT = '#4a4a4a'
-const COLOR_REACHABLE = '#3b6fa0'
-const COLOR_PATH = '#5b9fd0'
-const COLOR_HOVERED = '#7bc0f0'
+const COLOR_REACHABLE = '#3a7a4a'
+const COLOR_PATH = '#5baa6d'
+const COLOR_HOVERED = '#7bdd8a'
+
+// ---- Spell range colors (blue) ----
+const COLOR_SPELL_RANGE = '#3b6fa0'
+const COLOR_SPELL_TARGET = '#ff6b6b'
 
 interface GridFloorProps {
   map?: CombatMapDefinition
@@ -41,17 +45,35 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
   // ---- Only show reachable zone when a tile in range is hovered ----
   const hasHover = useCombatStore((s) => s.hoveredTile !== null)
 
+  // ---- Spell mode selectors ----
+  const interactionMode = useCombatStore((s) => s.interactionMode)
+  const isInSpellRange = useCombatStore((s) => s.spellRangeTileKeys.has(key))
+  const isSpellHovered = useCombatStore(
+    (s) =>
+      s.spellHoveredTarget !== null &&
+      s.spellHoveredTarget.col === tile.coord.col &&
+      s.spellHoveredTarget.row === tile.coord.row,
+  )
+
   const setHoveredTile = useCombatStore((s) => s.setHoveredTile)
   const executeMove = useCombatStore((s) => s.executeMove)
+  const castSpell = useCombatStore((s) => s.castSpell)
 
-  // ---- Determine tile color based on combat state ----
-  const color = isHovered
-    ? COLOR_HOVERED
-    : isOnPath
-      ? COLOR_PATH
-      : isReachable && hasHover
-        ? COLOR_REACHABLE
-        : COLOR_DEFAULT
+  // ---- Determine tile color based on combat state and interaction mode ----
+  const color =
+    interactionMode === 'spell'
+      ? isSpellHovered
+        ? COLOR_SPELL_TARGET
+        : isInSpellRange
+          ? COLOR_SPELL_RANGE
+          : COLOR_DEFAULT
+      : isHovered
+        ? COLOR_HOVERED
+        : isOnPath
+          ? COLOR_PATH
+          : isReachable && hasHover
+            ? COLOR_REACHABLE
+            : COLOR_DEFAULT
 
   const worldPos = gridToWorld(tile.coord, config)
 
@@ -74,11 +96,13 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
   const handleClick = useCallback(
     (e: { stopPropagation: () => void }) => {
       e.stopPropagation()
-      if (isReachable) {
+      if (interactionMode === 'spell' && isInSpellRange) {
+        castSpell(tile.coord)
+      } else if (interactionMode === 'movement' && isReachable) {
         executeMove(tile.coord)
       }
     },
-    [executeMove, isReachable, tile.coord],
+    [executeMove, castSpell, isReachable, isInSpellRange, interactionMode, tile.coord],
   )
 
   return (

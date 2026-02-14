@@ -1,13 +1,45 @@
 import { useEffect, useMemo, useCallback } from 'react'
+import { useThree, useFrame } from '@react-three/fiber'
+import { Vector3 } from 'three'
 import IsometricCamera from '@/game/camera/IsometricCamera'
 import GridFloor from '@/game/map/GridFloor'
 import UnitCube from '@/game/units/UnitCube'
 import PathPreview from '@/game/combat/PathPreview'
-import { mapToGridConfig } from '@/game/map/gridUtils'
+import { mapToGridConfig, gridToWorld } from '@/game/map/gridUtils'
 import { useCombatStore } from '@/stores/combatStore'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import type { GridConfig } from '@/types/grid'
 
 const ROTATION_Y = Math.PI / 4
+
+// ---- Projects spell target world position to screen coords each frame ----
+function SpellTargetProjector({ config }: { config: GridConfig }) {
+  const { camera, size } = useThree()
+  const spellHoveredTarget = useCombatStore((s) => s.spellHoveredTarget)
+  const setSpellTargetScreenPos = useCombatStore(
+    (s) => s.setSpellTargetScreenPos,
+  )
+
+  useFrame(() => {
+    if (!spellHoveredTarget) {
+      setSpellTargetScreenPos(null)
+      return
+    }
+
+    const worldPos = gridToWorld(spellHoveredTarget, config)
+    const vec = new Vector3(worldPos.x, 0.5, worldPos.z)
+    // ---- Apply the same rotation as the grid group ----
+    vec.applyAxisAngle(new Vector3(0, 1, 0), ROTATION_Y)
+    vec.project(camera)
+
+    const x = (vec.x * 0.5 + 0.5) * size.width
+    const y = (-vec.y * 0.5 + 0.5) * size.height
+
+    setSpellTargetScreenPos({ x, y })
+  })
+
+  return null
+}
 
 function BattleScene() {
   const player = useGameModeStore((s) => s.player)
@@ -66,6 +98,8 @@ function BattleScene() {
         })}
         <PathPreview path={previewPath} config={config} />
       </group>
+
+      <SpellTargetProjector config={config} />
     </>
   )
 }

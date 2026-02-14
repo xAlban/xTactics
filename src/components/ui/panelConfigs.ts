@@ -63,3 +63,20 @@ export const BUTTON_ROW_CONFIG: PanelConfig = {
   maxWidth: 6,
   maxHeight: 2,
 }
+
+// ---- Spell panel config: secondary panel, fixed size, free positioning ----
+export const SPELL_PANEL_CONFIG: PanelConfig = {
+  id: PANEL_IDS.SPELL_PANEL,
+  defaultLayout: {
+    gridCol: 0,
+    gridRow: 2,
+    gridWidth: 2,
+    gridHeight: 4,
+  },
+  resizable: false,
+  gridLocked: false,
+  minWidth: 2,
+  minHeight: 4,
+  maxWidth: 2,
+  maxHeight: 4,
+}

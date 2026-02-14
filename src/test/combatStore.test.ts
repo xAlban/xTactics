@@ -3,6 +3,10 @@ import { useCombatStore } from '@/stores/combatStore'
 import { createPlayer } from '@/game/units/playerFactory'
 import type { CombatMapDefinition } from '@/types/grid'
 import type { CombatSetup } from '@/types/combat'
+import {
+  SPELL_MELEE_STRIKE,
+  SPELL_FIREBALL,
+} from '@/game/combat/spellDefinitions'
 
 // ---- Simple 5x5 open map for testing ----
 const TEST_MAP: CombatMapDefinition = {
@@ -49,6 +53,12 @@ beforeEach(() => {
     previewPathKeys: new Set(),
     movementPath: [],
     isMoving: false,
+    selectedSpell: null,
+    spellRangeTiles: [],
+    spellRangeTileKeys: new Set(),
+    spellHoveredTarget: null,
+    interactionMode: 'movement',
+    spellTargetScreenPos: null,
   })
 })
 
@@ -371,5 +381,252 @@ describe('MP depletion', () => {
     const state = useCombatStore.getState()
     expect(state.units[0]!.currentMp).toBe(0)
     expect(state.reachableTiles).toHaveLength(0)
+  })
+})
+
+describe('spell selection', () => {
+  it('selectSpell sets selectedSpell, interactionMode, and computes range', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+
+    const state = useCombatStore.getState()
+    expect(state.selectedSpell).toBe(SPELL_MELEE_STRIKE)
+    expect(state.interactionMode).toBe('spell')
+    expect(state.spellRangeTiles.length).toBeGreaterThan(0)
+    expect(state.spellRangeTileKeys.size).toBeGreaterThan(0)
+  })
+
+  it('selectSpell blocked when not enough AP', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    // ---- Set AP to 2 (less than Strike's cost of 3) ----
+    const units = [...useCombatStore.getState().units]
+    units[0] = { ...units[0]!, currentAp: 2 }
+    useCombatStore.setState({ units })
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+
+    expect(useCombatStore.getState().selectedSpell).toBeNull()
+    expect(useCombatStore.getState().interactionMode).toBe('movement')
+  })
+
+  it('selectSpell blocked during enemy turn', () => {
+    const setup = makeSetup(
+      [{ col: 0, row: 0 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    // ---- Switch to enemy turn ----
+    useCombatStore.setState({ activeUnitIndex: 1 })
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+
+    expect(useCombatStore.getState().selectedSpell).toBeNull()
+  })
+
+  it('cancelSpell clears spell state and restores movement mode', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().cancelSpell()
+
+    const state = useCombatStore.getState()
+    expect(state.selectedSpell).toBeNull()
+    expect(state.interactionMode).toBe('movement')
+    expect(state.spellRangeTiles).toHaveLength(0)
+    // ---- Movement reachable tiles should be restored ----
+    expect(state.reachableTiles.length).toBeGreaterThan(0)
+  })
+})
+
+describe('spell casting', () => {
+  it('castSpell deducts AP from active unit', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    const apBefore = useCombatStore.getState().units[0]!.currentAp
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().units[0]!.currentAp).toBe(
+      apBefore - SPELL_MELEE_STRIKE.apCost,
+    )
+  })
+
+  it('castSpell deals damage to target unit', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    const hpBefore = useCombatStore.getState().units[1]!.currentHp
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().units[1]!.currentHp).toBeLessThan(hpBefore)
+  })
+
+  it('castSpell marks unit defeated when HP reaches 0', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    // ---- Set enemy HP very low so a single hit kills ----
+    const units = [...useCombatStore.getState().units]
+    units[1] = { ...units[1]!, currentHp: 1 }
+    useCombatStore.setState({ units })
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().units[1]!.defeated).toBe(true)
+    expect(useCombatStore.getState().units[1]!.currentHp).toBe(0)
+  })
+
+  it('castSpell triggers victory when last enemy killed', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    // ---- Set enemy HP very low ----
+    const units = [...useCombatStore.getState().units]
+    units[1] = { ...units[1]!, currentHp: 1 }
+    useCombatStore.setState({ units })
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().combatStatus).toBe('victory')
+  })
+
+  it('castSpell on empty tile consumes AP but deals no damage', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    const apBefore = useCombatStore.getState().units[0]!.currentAp
+    const enemyHpBefore = useCombatStore.getState().units[1]!.currentHp
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    // ---- Cast on adjacent empty tile ----
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().units[0]!.currentAp).toBe(
+      apBefore - SPELL_MELEE_STRIKE.apCost,
+    )
+    // ---- Enemy should not take damage ----
+    expect(useCombatStore.getState().units[1]!.currentHp).toBe(enemyHpBefore)
+  })
+
+  it('castSpell blocked when target not in range', () => {
+    const setup = makeSetup(
+      [{ col: 0, row: 0 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    const apBefore = useCombatStore.getState().units[0]!.currentAp
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    // ---- (4,4) is far out of melee range ----
+    useCombatStore.getState().castSpell({ col: 4, row: 4 })
+
+    // ---- AP should not have changed ----
+    expect(useCombatStore.getState().units[0]!.currentAp).toBe(apBefore)
+  })
+
+  it('castSpell clears spell state after cast', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    const state = useCombatStore.getState()
+    expect(state.selectedSpell).toBeNull()
+    expect(state.interactionMode).toBe('movement')
+    expect(state.spellRangeTiles).toHaveLength(0)
+  })
+})
+
+describe('spell interaction mode', () => {
+  it('setHoveredTile delegates to setSpellHoveredTarget when in spell mode', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().setHoveredTile({ col: 2, row: 3 })
+
+    const state = useCombatStore.getState()
+    expect(state.spellHoveredTarget).toEqual({ col: 2, row: 3 })
+    // ---- Movement hover state should remain clear ----
+    expect(state.hoveredTile).toBeNull()
+  })
+
+  it('executeMove blocked when in spell mode', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().executeMove({ col: 2, row: 0 })
+
+    // ---- Position should not have changed ----
+    expect(useCombatStore.getState().units[0]!.position).toEqual({
+      col: 2,
+      row: 2,
+    })
+  })
+
+  it('endTurn clears spell state', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    expect(useCombatStore.getState().interactionMode).toBe('spell')
+
+    useCombatStore.getState().endTurn()
+
+    // ---- After enemy auto-passes back to player ----
+    vi.advanceTimersByTime(500)
+
+    const state = useCombatStore.getState()
+    expect(state.selectedSpell).toBeNull()
+    expect(state.interactionMode).toBe('movement')
   })
 })

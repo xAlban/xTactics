@@ -9,6 +9,7 @@ export const PANEL_IDS = {
   CHARACTER_INFO: 'characterInfo',
   BUTTON_ROW: 'buttonRow',
   CHARACTER_SHEET: 'characterSheet',
+  SPELL_PANEL: 'spellPanel',
 } as const
 
 type LayoutMap = Record<string, PanelLayout>
@@ -43,6 +44,12 @@ const DEFAULT_COMBAT_LAYOUT: LayoutMap = {
     gridRow: 7,
     gridWidth: 2,
     gridHeight: 1,
+  },
+  [PANEL_IDS.SPELL_PANEL]: {
+    gridCol: 0,
+    gridRow: 2,
+    gridWidth: 2,
+    gridHeight: 4,
   },
 }
 

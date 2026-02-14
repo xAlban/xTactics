@@ -9,6 +9,7 @@ import type {
   UnitTeam,
 } from '@/types/combat'
 import type { Player } from '@/types/player'
+import type { SpellDefinition } from '@/types/spell'
 import {
   coordKey,
   buildWalkableSet,
@@ -16,6 +17,7 @@ import {
   getReachableCoords,
   reconstructPath,
 } from '@/game/combat/pathfinding'
+import { getSpellRangeTiles, rollSpellDamage } from '@/game/combat/spellUtils'
 import { createEnemy } from '@/game/units/playerFactory'
 import { generateGridTiles } from '@/game/map/gridUtils'
 
@@ -55,6 +57,14 @@ interface CombatState {
   movementPath: Path
   isMoving: boolean
 
+  // ---- Spell system state ----
+  selectedSpell: SpellDefinition | null
+  spellRangeTiles: TileCoord[]
+  spellRangeTileKeys: Set<string>
+  spellHoveredTarget: TileCoord | null
+  interactionMode: 'movement' | 'spell'
+  spellTargetScreenPos: { x: number; y: number } | null
+
   // ---- Actions ----
   initCombat: (setup: CombatSetup, players: Player[]) => void
   computeReachable: () => void
@@ -68,6 +78,13 @@ interface CombatState {
   tickTimer: () => void
   checkCombatEnd: () => CombatStatus
   _processNextUnit: () => void
+
+  // ---- Spell actions ----
+  selectSpell: (spell: SpellDefinition) => void
+  cancelSpell: () => void
+  setSpellHoveredTarget: (coord: TileCoord | null) => void
+  castSpell: (targetCoord: TileCoord) => void
+  setSpellTargetScreenPos: (pos: { x: number; y: number } | null) => void
 }
 
 // ---- Helper: check if the active unit belongs to the player team ----
@@ -102,6 +119,13 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   previewPathKeys: new Set(),
   movementPath: [],
   isMoving: false,
+
+  selectedSpell: null,
+  spellRangeTiles: [],
+  spellRangeTileKeys: new Set(),
+  spellHoveredTarget: null,
+  interactionMode: 'movement',
+  spellTargetScreenPos: null,
 
   initCombat: (setup, players) => {
     // ---- Clear any existing timer ----
@@ -150,6 +174,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       turnTimeRemaining: TURN_TIMER_DURATION,
       movementPath: [],
       isMoving: false,
+      selectedSpell: null,
+      spellRangeTiles: [],
+      spellRangeTileKeys: new Set(),
+      spellHoveredTarget: null,
+      interactionMode: 'movement',
+      spellTargetScreenPos: null,
     })
 
     // ---- Compute reachable tiles for first active unit ----
@@ -203,6 +233,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       tiles,
       isMoving,
       combatStatus,
+      interactionMode,
     } = get()
 
     // ---- Ignore hover during movement animation or when combat is over ----
@@ -210,6 +241,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
     // ---- Only allow interaction on player turns ----
     if (!isPlayerTurn(units, activeUnitIndex)) return
+
+    // ---- Delegate to spell hover when in spell mode ----
+    if (interactionMode === 'spell') {
+      get().setSpellHoveredTarget(coord)
+      return
+    }
 
     if (!coord) {
       set({
@@ -267,8 +304,11 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   },
 
   executeMove: (target) => {
-    const { units, activeUnitIndex, tiles, isMoving, combatStatus } = get()
+    const { units, activeUnitIndex, tiles, isMoving, combatStatus, interactionMode } = get()
     if (isMoving || combatStatus !== 'active') return
+
+    // ---- Block movement when in spell mode ----
+    if (interactionMode === 'spell') return
 
     // ---- Only allow movement on player turns ----
     if (!isPlayerTurn(units, activeUnitIndex)) return
@@ -352,6 +392,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       hoveredTile: null,
       previewPath: [],
       previewPathKeys: new Set(),
+      selectedSpell: null,
+      spellRangeTiles: [],
+      spellRangeTileKeys: new Set(),
+      spellHoveredTarget: null,
+      interactionMode: 'movement',
+      spellTargetScreenPos: null,
     })
 
     get().computeReachable()
@@ -429,5 +475,140 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       // ---- Player turn: start the timer ----
       get().startTurnTimer()
     }
+  },
+
+  selectSpell: (spell) => {
+    const { units, activeUnitIndex, tiles, combatStatus } = get()
+    if (combatStatus !== 'active') return
+    if (!isPlayerTurn(units, activeUnitIndex)) return
+
+    const activeUnit = units[activeUnitIndex]
+    if (!activeUnit || activeUnit.currentAp < spell.apCost) return
+
+    // ---- Compute spell range tiles ----
+    const spellRangeTiles = getSpellRangeTiles(
+      spell,
+      activeUnit.position,
+      tiles,
+    )
+    const spellRangeTileKeys = new Set(spellRangeTiles.map(coordKey))
+
+    set({
+      selectedSpell: spell,
+      spellRangeTiles,
+      spellRangeTileKeys,
+      spellHoveredTarget: null,
+      interactionMode: 'spell',
+      // ---- Clear movement hover state ----
+      hoveredTile: null,
+      previewPath: [],
+      previewPathKeys: new Set(),
+    })
+  },
+
+  cancelSpell: () => {
+    set({
+      selectedSpell: null,
+      spellRangeTiles: [],
+      spellRangeTileKeys: new Set(),
+      spellHoveredTarget: null,
+      interactionMode: 'movement',
+      spellTargetScreenPos: null,
+    })
+
+    // ---- Restore movement highlights ----
+    get().computeReachable()
+  },
+
+  setSpellHoveredTarget: (coord) => {
+    const { interactionMode, selectedSpell, spellRangeTileKeys } = get()
+    if (interactionMode !== 'spell' || !selectedSpell) return
+
+    if (!coord) {
+      set({ spellHoveredTarget: null })
+      return
+    }
+
+    const key = coordKey(coord)
+    if (spellRangeTileKeys.has(key)) {
+      set({ spellHoveredTarget: coord })
+    } else {
+      set({ spellHoveredTarget: null })
+    }
+  },
+
+  castSpell: (targetCoord) => {
+    const {
+      selectedSpell,
+      interactionMode,
+      units,
+      activeUnitIndex,
+      combatStatus,
+      spellRangeTileKeys,
+    } = get()
+
+    // ---- Guards ----
+    if (!selectedSpell) return
+    if (interactionMode !== 'spell') return
+    if (combatStatus !== 'active') return
+    if (!isPlayerTurn(units, activeUnitIndex)) return
+
+    const targetKey = coordKey(targetCoord)
+    if (!spellRangeTileKeys.has(targetKey)) return
+
+    const activeUnit = units[activeUnitIndex]
+    if (!activeUnit || activeUnit.currentAp < selectedSpell.apCost) return
+
+    // ---- Deduct AP ----
+    const updatedUnits = [...units]
+    updatedUnits[activeUnitIndex] = {
+      ...activeUnit,
+      currentAp: activeUnit.currentAp - selectedSpell.apCost,
+    }
+
+    // ---- Check if there is a living unit on the target tile ----
+    const targetUnitIndex = updatedUnits.findIndex(
+      (u) =>
+        !u.defeated &&
+        u.position.col === targetCoord.col &&
+        u.position.row === targetCoord.row,
+    )
+
+    if (targetUnitIndex !== -1) {
+      const targetUnit = updatedUnits[targetUnitIndex]!
+      const damage = rollSpellDamage(selectedSpell, activeUnit.player.bonusStats)
+      const newHp = Math.max(0, targetUnit.currentHp - damage)
+
+      updatedUnits[targetUnitIndex] = {
+        ...targetUnit,
+        currentHp: newHp,
+        defeated: newHp <= 0,
+      }
+    }
+
+    // ---- Clear spell state ----
+    set({
+      units: updatedUnits,
+      selectedSpell: null,
+      spellRangeTiles: [],
+      spellRangeTileKeys: new Set(),
+      spellHoveredTarget: null,
+      interactionMode: 'movement',
+      spellTargetScreenPos: null,
+    })
+
+    // ---- Check combat end after damage ----
+    const result = get().checkCombatEnd()
+    if (result !== 'active') {
+      set({ combatStatus: result })
+      get().clearTurnTimer()
+    }
+
+    // ---- Recompute movement range (AP changed) ----
+    get().computeReachable()
+  },
+
+  setSpellTargetScreenPos: (pos) => {
+    set({ spellTargetScreenPos: pos })
   },
 }))

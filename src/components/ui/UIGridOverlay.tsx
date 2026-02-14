@@ -7,11 +7,14 @@ import MapPanel from './MapPanel'
 import CharacterInfoPanel from './CharacterInfoPanel'
 import ButtonRowPanel from './ButtonRowPanel'
 import CharacterSheetPanel from './CharacterSheetPanel'
+import SpellPanel from './SpellPanel'
+import DamagePreviewOverlay from './DamagePreviewOverlay'
 import {
   MAP_PANEL_CONFIG,
   CHARACTER_INFO_CONFIG,
   BUTTON_ROW_CONFIG,
   CHARACTER_SHEET_CONFIG,
+  SPELL_PANEL_CONFIG,
 } from './panelConfigs'
 
 // ---- Base panels always visible ----
@@ -27,10 +30,11 @@ const PANEL_CONTENT: Record<string, React.ReactNode> = {
   [PANEL_IDS.CHARACTER_INFO]: <CharacterInfoPanel />,
   [PANEL_IDS.BUTTON_ROW]: <ButtonRowPanel />,
   [PANEL_IDS.CHARACTER_SHEET]: <CharacterSheetPanel />,
+  [PANEL_IDS.SPELL_PANEL]: <SpellPanel />,
 }
 
 // ---- Secondary panels toggled by actions ----
-const SECONDARY_PANELS: PanelConfig[] = [CHARACTER_SHEET_CONFIG]
+const SECONDARY_PANELS: PanelConfig[] = [CHARACTER_SHEET_CONFIG, SPELL_PANEL_CONFIG]
 
 export default function UIGridOverlay() {
   const mode = useGameModeStore((s) => s.mode)
@@ -85,6 +89,9 @@ export default function UIGridOverlay() {
           </UIPanel>
         )
       })}
+
+      {/* ---- Damage preview overlay (positioned by spell target screen coords) ---- */}
+      <DamagePreviewOverlay />
     </div>
   )
 }
