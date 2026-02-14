@@ -97,13 +97,21 @@ export default function UIPanel({
         const rawX = ev.clientX - (e.clientX - panelX)
         const rawY = ev.clientY - (e.clientY - panelY)
 
-        const snappedCol = clamp(
-          Math.round(rawX / cell.w),
+        // ---- Snap to grid or allow free positioning ----
+        const col = config.gridLocked
+          ? Math.round(rawX / cell.w)
+          : rawX / cell.w
+        const row = config.gridLocked
+          ? Math.round(rawY / cell.h)
+          : rawY / cell.h
+
+        const clampedCol = clamp(
+          col,
           0,
           UI_GRID_COLS - layout.gridWidth,
         )
-        const snappedRow = clamp(
-          Math.round(rawY / cell.h),
+        const clampedRow = clamp(
+          row,
           0,
           UI_GRID_ROWS - layout.gridHeight,
         )
@@ -111,15 +119,15 @@ export default function UIPanel({
         setTempPos(null)
         onLayoutChange({
           ...layout,
-          gridCol: snappedCol,
-          gridRow: snappedRow,
+          gridCol: clampedCol,
+          gridRow: clampedRow,
         })
       }
 
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
     },
-    [layout, getCellSize, onLayoutChange],
+    [config.gridLocked, layout, getCellSize, onLayoutChange],
   )
 
   // ---- Corner resize handler ----

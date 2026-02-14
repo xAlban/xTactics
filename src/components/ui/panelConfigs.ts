@@ -6,6 +6,7 @@ export const MAP_PANEL_CONFIG: PanelConfig = {
   id: PANEL_IDS.MAP,
   defaultLayout: { gridCol: 10, gridRow: 0, gridWidth: 2, gridHeight: 2 },
   resizable: true,
+  gridLocked: true,
   minWidth: 2,
   minHeight: 2,
   maxWidth: 6,
@@ -22,13 +23,14 @@ export const CHARACTER_INFO_CONFIG: PanelConfig = {
     gridHeight: 2,
   },
   resizable: false,
+  gridLocked: true,
   minWidth: 2,
   minHeight: 2,
   maxWidth: 2,
   maxHeight: 2,
 }
 
-// ---- Character sheet config: secondary panel, fixed size, not resizable ----
+// ---- Character sheet config: secondary panel, fixed size, free positioning ----
 export const CHARACTER_SHEET_CONFIG: PanelConfig = {
   id: PANEL_IDS.CHARACTER_SHEET,
   defaultLayout: {
@@ -38,6 +40,7 @@ export const CHARACTER_SHEET_CONFIG: PanelConfig = {
     gridHeight: 6,
   },
   resizable: false,
+  gridLocked: false,
   minWidth: 4,
   minHeight: 6,
   maxWidth: 4,
@@ -54,6 +57,7 @@ export const BUTTON_ROW_CONFIG: PanelConfig = {
     gridHeight: 1,
   },
   resizable: true,
+  gridLocked: true,
   minWidth: 1,
   minHeight: 1,
   maxWidth: 6,

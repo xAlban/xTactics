@@ -11,6 +11,7 @@ export interface PanelConfig {
   id: string
   defaultLayout: PanelLayout
   resizable: boolean
+  gridLocked: boolean
   minWidth: number
   minHeight: number
   maxWidth: number
