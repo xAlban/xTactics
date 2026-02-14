@@ -8,7 +8,8 @@ import CharacterInfoPanel from './CharacterInfoPanel'
 import ButtonRowPanel from './ButtonRowPanel'
 import CharacterSheetPanel from './CharacterSheetPanel'
 import SpellPanel from './SpellPanel'
-import DamagePreviewOverlay from './DamagePreviewOverlay'
+import FloatingNumberOverlay from './FloatingNumberOverlay'
+import TileOverlayStack from './TileOverlayStack'
 import {
   MAP_PANEL_CONFIG,
   CHARACTER_INFO_CONFIG,
@@ -90,8 +91,9 @@ export default function UIGridOverlay() {
         )
       })}
 
-      {/* ---- Damage preview overlay (positioned by spell target screen coords) ---- */}
-      <DamagePreviewOverlay />
+      {/* ---- Combat overlays (positioned by screen projections) ---- */}
+      <TileOverlayStack />
+      <FloatingNumberOverlay />
     </div>
   )
 }

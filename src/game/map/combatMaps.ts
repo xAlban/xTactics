@@ -47,3 +47,19 @@ export const CROSS_MAP: CombatMapDefinition = {
   tileSize: 1.2,
   tileGap: 0.06,
 }
+
+// ---- Cross-shaped map using spaces for empty corners ----
+export const HAJE_MAP: CombatMapDefinition = {
+  name: 'Haje',
+  layout: [
+    '.......',
+    '.......',
+    '.. XX..',
+    '.. XX..',
+    '..XX ..',
+    '..XX ..',
+    '.......',
+  ],
+  tileSize: 1.2,
+  tileGap: 0.06,
+}

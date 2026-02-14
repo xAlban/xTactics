@@ -30,6 +30,10 @@ vi.mock('@/game/combat/PathPreview', () => ({
   default: () => <div data-testid="path-preview" />,
 }))
 
+vi.mock('@/game/combat/FloatingNumberProjector', () => ({
+  default: () => <div data-testid="floating-number-projector" />,
+}))
+
 // ---- Mock scene components for mode switching ----
 vi.mock('@/game/scenes/NormalScene', () => ({
   default: () => <div data-testid="normal-scene" />,

@@ -58,6 +58,8 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
   const setHoveredTile = useCombatStore((s) => s.setHoveredTile)
   const executeMove = useCombatStore((s) => s.executeMove)
   const castSpell = useCombatStore((s) => s.castSpell)
+  const units = useCombatStore((s) => s.units)
+  const setHoveredUnit = useCombatStore((s) => s.setHoveredUnit)
 
   // ---- Determine tile color based on combat state and interaction mode ----
   const color =
@@ -81,16 +83,25 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
     (e: { stopPropagation: () => void }) => {
       e.stopPropagation()
       setHoveredTile(tile.coord)
+      // ---- Check if a unit occupies this tile ----
+      const unitOnTile = units.find(
+        (u) =>
+          !u.defeated &&
+          u.position.col === tile.coord.col &&
+          u.position.row === tile.coord.row,
+      )
+      setHoveredUnit(unitOnTile ?? null)
     },
-    [setHoveredTile, tile.coord],
+    [setHoveredTile, setHoveredUnit, tile.coord, units],
   )
 
   const handlePointerOut = useCallback(
     (e: { stopPropagation: () => void }) => {
       e.stopPropagation()
       setHoveredTile(null)
+      setHoveredUnit(null)
     },
-    [setHoveredTile],
+    [setHoveredTile, setHoveredUnit],
   )
 
   const handleClick = useCallback(

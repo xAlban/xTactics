@@ -20,6 +20,7 @@ import {
 import { getSpellRangeTiles, rollSpellDamage } from '@/game/combat/spellUtils'
 import { createEnemy } from '@/game/units/playerFactory'
 import { generateGridTiles } from '@/game/map/gridUtils'
+import { useFloatingNumberStore } from '@/stores/floatingNumberStore'
 
 // ---- Turn timer duration in seconds ----
 const TURN_TIMER_DURATION = 30
@@ -65,6 +66,10 @@ interface CombatState {
   interactionMode: 'movement' | 'spell'
   spellTargetScreenPos: { x: number; y: number } | null
 
+  // ---- Hovered unit info ----
+  hoveredUnit: CombatUnit | null
+  hoveredUnitScreenPos: { x: number; y: number } | null
+
   // ---- Actions ----
   initCombat: (setup: CombatSetup, players: Player[]) => void
   computeReachable: () => void
@@ -85,6 +90,10 @@ interface CombatState {
   setSpellHoveredTarget: (coord: TileCoord | null) => void
   castSpell: (targetCoord: TileCoord) => void
   setSpellTargetScreenPos: (pos: { x: number; y: number } | null) => void
+
+  // ---- Unit hover actions ----
+  setHoveredUnit: (unit: CombatUnit | null) => void
+  setHoveredUnitScreenPos: (pos: { x: number; y: number } | null) => void
 }
 
 // ---- Helper: check if the active unit belongs to the player team ----
@@ -126,6 +135,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   spellHoveredTarget: null,
   interactionMode: 'movement',
   spellTargetScreenPos: null,
+
+  hoveredUnit: null,
+  hoveredUnitScreenPos: null,
 
   initCombat: (setup, players) => {
     // ---- Clear any existing timer ----
@@ -341,6 +353,11 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       position: target,
       currentMp: activeUnit.currentMp - stepsUsed,
     }
+
+    // ---- Emit MP cost floating number at the destination ----
+    useFloatingNumberStore
+      .getState()
+      .addFloatingNumber(stepsUsed, 'mp', target)
 
     set({
       units: updatedUnits,
@@ -566,6 +583,14 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       currentAp: activeUnit.currentAp - selectedSpell.apCost,
     }
 
+    // ---- Emit AP cost floating number at the caster ----
+    const floatingStore = useFloatingNumberStore.getState()
+    floatingStore.addFloatingNumber(
+      selectedSpell.apCost,
+      'ap',
+      activeUnit.position,
+    )
+
     // ---- Check if there is a living unit on the target tile ----
     const targetUnitIndex = updatedUnits.findIndex(
       (u) =>
@@ -584,6 +609,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
         currentHp: newHp,
         defeated: newHp <= 0,
       }
+
+      // ---- Emit damage floating number at the target ----
+      floatingStore.addFloatingNumber(damage, 'damage', targetCoord)
     }
 
     // ---- Clear spell state ----
@@ -610,5 +638,13 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
   setSpellTargetScreenPos: (pos) => {
     set({ spellTargetScreenPos: pos })
+  },
+
+  setHoveredUnit: (unit) => {
+    set({ hoveredUnit: unit })
+  },
+
+  setHoveredUnitScreenPos: (pos) => {
+    set({ hoveredUnitScreenPos: pos })
   },
 }))

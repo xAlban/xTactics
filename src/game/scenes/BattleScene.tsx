@@ -5,6 +5,7 @@ import IsometricCamera from '@/game/camera/IsometricCamera'
 import GridFloor from '@/game/map/GridFloor'
 import UnitCube from '@/game/units/UnitCube'
 import PathPreview from '@/game/combat/PathPreview'
+import FloatingNumberProjector from '@/game/combat/FloatingNumberProjector'
 import { mapToGridConfig, gridToWorld } from '@/game/map/gridUtils'
 import { useCombatStore } from '@/stores/combatStore'
 import { useGameModeStore } from '@/stores/gameModeStore'
@@ -36,6 +37,34 @@ function SpellTargetProjector({ config }: { config: GridConfig }) {
     const y = (-vec.y * 0.5 + 0.5) * size.height
 
     setSpellTargetScreenPos({ x, y })
+  })
+
+  return null
+}
+
+// ---- Projects hovered unit world position to screen coords each frame ----
+function UnitHoverProjector({ config }: { config: GridConfig }) {
+  const { camera, size } = useThree()
+  const hoveredUnit = useCombatStore((s) => s.hoveredUnit)
+  const setHoveredUnitScreenPos = useCombatStore(
+    (s) => s.setHoveredUnitScreenPos,
+  )
+
+  useFrame(() => {
+    if (!hoveredUnit) {
+      setHoveredUnitScreenPos(null)
+      return
+    }
+
+    const worldPos = gridToWorld(hoveredUnit.position, config)
+    const vec = new Vector3(worldPos.x, 0.5, worldPos.z)
+    vec.applyAxisAngle(new Vector3(0, 1, 0), ROTATION_Y)
+    vec.project(camera)
+
+    const x = (vec.x * 0.5 + 0.5) * size.width
+    const y = (-vec.y * 0.5 + 0.5) * size.height
+
+    setHoveredUnitScreenPos({ x, y })
   })
 
   return null
@@ -100,6 +129,8 @@ function BattleScene() {
       </group>
 
       <SpellTargetProjector config={config} />
+      <UnitHoverProjector config={config} />
+      <FloatingNumberProjector config={config} />
     </>
   )
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { useCombatStore } from '@/stores/combatStore'
+import { useFloatingNumberStore } from '@/stores/floatingNumberStore'
 import { createPlayer } from '@/game/units/playerFactory'
 import type { CombatMapDefinition } from '@/types/grid'
 import type { CombatSetup } from '@/types/combat'
@@ -59,7 +60,10 @@ beforeEach(() => {
     spellHoveredTarget: null,
     interactionMode: 'movement',
     spellTargetScreenPos: null,
+    hoveredUnit: null,
+    hoveredUnitScreenPos: null,
   })
+  useFloatingNumberStore.getState().clearAll()
 })
 
 afterEach(() => {
@@ -628,5 +632,72 @@ describe('spell interaction mode', () => {
     const state = useCombatStore.getState()
     expect(state.selectedSpell).toBeNull()
     expect(state.interactionMode).toBe('movement')
+  })
+})
+
+describe('floating numbers', () => {
+  it('emits MP floating number on movement', () => {
+    const setup = makeSetup([{ col: 2, row: 2 }])
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().executeMove({ col: 2, row: 0 })
+
+    const numbers = useFloatingNumberStore.getState().numbers
+    expect(numbers).toHaveLength(1)
+    expect(numbers[0]!.type).toBe('mp')
+    expect(numbers[0]!.value).toBe(2)
+    expect(numbers[0]!.tileCoord).toEqual({ col: 2, row: 0 })
+  })
+
+  it('emits AP floating number on spell cast', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    const numbers = useFloatingNumberStore.getState().numbers
+    const apNumber = numbers.find((n) => n.type === 'ap')
+    expect(apNumber).toBeDefined()
+    expect(apNumber!.value).toBe(SPELL_MELEE_STRIKE.apCost)
+    expect(apNumber!.tileCoord).toEqual({ col: 2, row: 2 })
+  })
+
+  it('emits damage floating number when spell hits a unit', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    const numbers = useFloatingNumberStore.getState().numbers
+    const damageNumber = numbers.find((n) => n.type === 'damage')
+    expect(damageNumber).toBeDefined()
+    expect(damageNumber!.value).toBeGreaterThan(0)
+    expect(damageNumber!.tileCoord).toEqual({ col: 2, row: 3 })
+  })
+
+  it('does not emit damage floating number when spell hits empty tile', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    const numbers = useFloatingNumberStore.getState().numbers
+    const damageNumber = numbers.find((n) => n.type === 'damage')
+    expect(damageNumber).toBeUndefined()
+    // ---- AP cost should still be emitted ----
+    const apNumber = numbers.find((n) => n.type === 'ap')
+    expect(apNumber).toBeDefined()
   })
 })
