@@ -3,7 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import { Vector3 } from 'three'
 import IsometricCamera from '@/game/camera/IsometricCamera'
 import GridFloor from '@/game/map/GridFloor'
-import UnitCube from '@/game/units/UnitCube'
+import UnitModel from '@/game/units/UnitModel'
 import PathPreview from '@/game/combat/PathPreview'
 import FloatingNumberProjector from '@/game/combat/FloatingNumberProjector'
 import { mapToGridConfig, gridToWorld } from '@/game/map/gridUtils'
@@ -113,7 +113,7 @@ function BattleScene() {
           // ---- Only animate the active unit's movement ----
           const isActive = i === activeUnitIndex
           return (
-            <UnitCube
+            <UnitModel
               key={unit.player.id}
               position={unit.position}
               playerClass={unit.player.playerClass}

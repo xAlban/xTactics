@@ -1,8 +1,11 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
-import type { Mesh } from 'three'
+import type { Group } from 'three'
 import { useGameModeStore } from '@/stores/gameModeStore'
 import type { CombatSetup } from '@/types/combat'
+import { PORTAL_MODEL } from '@/game/models/modelRegistry'
+import ModelRenderer from '@/game/models/GLTFModel'
+import ModelErrorBoundary from '@/game/models/ModelErrorBoundary'
 
 const PORTAL_COLOR = '#e74c3c'
 const PORTAL_HOVER_COLOR = '#ff6b6b'
@@ -13,15 +16,29 @@ interface CombatPortalProps {
   combatSetup: CombatSetup
 }
 
+// ---- Fallback torus shown when portal model is missing or loading ----
+function TorusFallback({ hovered }: { hovered: boolean }) {
+  return (
+    <mesh>
+      <torusGeometry args={[0.6, 0.15, 16, 32]} />
+      <meshStandardMaterial
+        color={hovered ? PORTAL_HOVER_COLOR : PORTAL_COLOR}
+        emissive={hovered ? PORTAL_HOVER_COLOR : PORTAL_COLOR}
+        emissiveIntensity={hovered ? 0.8 : 0.4}
+      />
+    </mesh>
+  )
+}
+
 function CombatPortal({ position, combatSetup }: CombatPortalProps) {
-  const meshRef = useRef<Mesh>(null)
+  const groupRef = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
   const enterCombat = useGameModeStore((s) => s.enterCombat)
 
   // ---- Slowly rotate the portal to make it noticeable ----
   useFrame((_, delta) => {
-    if (!meshRef.current) return
-    meshRef.current.rotation.y += delta * ROTATION_SPEED
+    if (!groupRef.current) return
+    groupRef.current.rotation.y += delta * ROTATION_SPEED
   })
 
   const handleClick = useCallback(
@@ -47,20 +64,23 @@ function CombatPortal({ position, combatSetup }: CombatPortalProps) {
   }, [])
 
   return (
-    <mesh
-      ref={meshRef}
+    <group
+      ref={groupRef}
       position={position}
       onClick={handleClick}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <torusGeometry args={[0.6, 0.15, 16, 32]} />
-      <meshStandardMaterial
-        color={hovered ? PORTAL_HOVER_COLOR : PORTAL_COLOR}
-        emissive={hovered ? PORTAL_HOVER_COLOR : PORTAL_COLOR}
-        emissiveIntensity={hovered ? 0.8 : 0.4}
-      />
-    </mesh>
+      {/* ---- Invisible collision mesh for raycasting ---- */}
+      <mesh visible={false}>
+        <sphereGeometry args={[0.8, 8, 8]} />
+      </mesh>
+      <ModelErrorBoundary fallback={<TorusFallback hovered={hovered} />}>
+        <Suspense fallback={<TorusFallback hovered={hovered} />}>
+          <ModelRenderer config={PORTAL_MODEL} />
+        </Suspense>
+      </ModelErrorBoundary>
+    </group>
   )
 }
 

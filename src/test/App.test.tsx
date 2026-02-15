@@ -14,6 +14,15 @@ vi.mock('@react-three/fiber', () => ({
 vi.mock('@react-three/drei', () => ({
   OrthographicCamera: () => null,
   OrbitControls: () => null,
+  Clone: () => null,
+  useGLTF: Object.assign(
+    () => ({ scene: { traverse: () => {}, children: [] }, animations: [] }),
+    { preload: () => {} },
+  ),
+  useFBX: Object.assign(
+    () => ({ traverse: () => {}, children: [] }),
+    { preload: () => {} },
+  ),
 }))
 
 // ---- Mock map components that rely on Three.js APIs ----
@@ -22,8 +31,8 @@ vi.mock('@/game/map/GridFloor', () => ({
 }))
 
 // ---- Mock 3D unit and path components ----
-vi.mock('@/game/units/UnitCube', () => ({
-  default: () => <div data-testid="unit-cube" />,
+vi.mock('@/game/units/UnitModel', () => ({
+  default: () => <div data-testid="unit-model" />,
 }))
 
 vi.mock('@/game/combat/PathPreview', () => ({

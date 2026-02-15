@@ -1,9 +1,12 @@
-import { useRef, useCallback, useMemo } from 'react'
+import { useRef, useCallback, useMemo, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { ShaderMaterial, Color } from 'three'
-import type { Mesh, Intersection } from 'three'
+import type { Group, Intersection } from 'three'
 import FollowCamera from '@/game/camera/FollowCamera'
 import CombatPortal from '@/game/objects/CombatPortal'
+import ModelRenderer from '@/game/models/GLTFModel'
+import ModelErrorBoundary from '@/game/models/ModelErrorBoundary'
+import { UNIT_MODELS } from '@/game/models/modelRegistry'
 import { useGameModeStore } from '@/stores/gameModeStore'
 import { PORTAL_COMBAT_SETUP } from '@/game/combat/combatSetups'
 
@@ -18,16 +21,9 @@ const PORTAL_POSITION: [number, number, number] = [5, 1, 5]
 const CUBE_SIZE = 0.7
 const CUBE_Y = CUBE_SIZE / 2
 
-// ---- Color per class (same as UnitCube) ----
-const CLASS_COLORS: Record<string, string> = {
-  bomberman: '#c0392b',
-  archer: '#27ae60',
-  knight: '#2980b9',
-  mage: '#8e44ad',
-}
 
 function NormalScene() {
-  const meshRef = useRef<Mesh>(null)
+  const meshRef = useRef<Group>(null)
   const targetRef = useRef<{ x: number; z: number } | null>(null)
 
   const playerPosition = useGameModeStore((s) => s.playerPosition)
@@ -68,7 +64,9 @@ function NormalScene() {
       }
     }
 
+    // ---- Position fully controlled here to avoid JSX prop conflicts ----
     meshRef.current.position.x = posRef.current.x
+    meshRef.current.position.y = CUBE_Y
     meshRef.current.position.z = posRef.current.z
   })
 
@@ -84,7 +82,7 @@ function NormalScene() {
     [setTargetPosition],
   )
 
-  const cubeColor = CLASS_COLORS[player.playerClass] ?? '#ffffff'
+  const modelConfig = UNIT_MODELS[player.playerClass]
 
   // ---- Shader material that draws a subtle grid pattern ----
   const gridMaterial = useMemo(
@@ -137,14 +135,28 @@ function NormalScene() {
         <planeGeometry args={[FLOOR_SIZE, FLOOR_SIZE]} />
       </mesh>
 
-      {/* ---- Player cube ---- */}
-      <mesh
-        ref={meshRef}
-        position={[playerPosition.x, CUBE_Y, playerPosition.z]}
-      >
-        <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
-        <meshStandardMaterial color={cubeColor} />
-      </mesh>
+      {/* ---- Player model (position controlled by useFrame) ---- */}
+      <group ref={meshRef}>
+        <ModelErrorBoundary
+          fallback={
+            <mesh>
+              <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
+              <meshStandardMaterial color={modelConfig.fallbackColor} />
+            </mesh>
+          }
+        >
+          <Suspense
+            fallback={
+              <mesh>
+                <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
+                <meshStandardMaterial color={modelConfig.fallbackColor} />
+              </mesh>
+            }
+          >
+            <ModelRenderer config={modelConfig} />
+          </Suspense>
+        </ModelErrorBoundary>
+      </group>
 
       {/* ---- Combat trigger portal ---- */}
       <CombatPortal

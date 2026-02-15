@@ -33,7 +33,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   KeyRound,
 }
 
-// ---- Player class colors (matches UnitCube) ----
+// ---- Player class colors (matches modelRegistry) ----
 const CLASS_COLORS: Record<string, string> = {
   bomberman: '#c0392b',
   archer: '#27ae60',

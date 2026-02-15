@@ -2,6 +2,10 @@ import { Canvas } from '@react-three/fiber'
 import BattleScene from '@/game/scenes/BattleScene'
 import NormalScene from '@/game/scenes/NormalScene'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import { preloadAllModels } from '@/game/models/preloadModels'
+
+// ---- Preload all 3D models at module init ----
+preloadAllModels()
 
 function Game() {
   const mode = useGameModeStore((s) => s.mode)
