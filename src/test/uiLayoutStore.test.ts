@@ -170,8 +170,8 @@ describe('uiLayoutStore', () => {
     const normalLayout = getLayout('normal')
     const combatLayout = getLayout('combat')
 
-    expect(normalLayout[PANEL_IDS.MAP].gridCol).toBe(1)
-    expect(combatLayout[PANEL_IDS.MAP].gridCol).toBe(10)
+    expect(normalLayout[PANEL_IDS.MAP]?.gridCol).toBe(1)
+    expect(combatLayout[PANEL_IDS.MAP]?.gridCol).toBe(10)
   })
 
   it('togglePanel opens a closed panel', () => {

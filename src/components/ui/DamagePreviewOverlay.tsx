@@ -1,4 +1,3 @@
-import { computeDamagePreview } from '@/game/combat/spellUtils'
 import type { DamageElement, SpellDamagePreview } from '@/types/spell'
 
 const ELEMENT_COLORS: Record<DamageElement, string> = {
@@ -7,8 +6,6 @@ const ELEMENT_COLORS: Record<DamageElement, string> = {
   air: 'text-cyan-400',
   water: 'text-blue-400',
 }
-
-export { computeDamagePreview }
 
 // ---- Extracted as a named component so it can be composed in TileOverlayStack ----
 export function DamagePreviewCard({

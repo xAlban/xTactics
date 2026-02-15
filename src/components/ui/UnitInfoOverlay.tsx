@@ -1,4 +1,3 @@
-import { useCombatStore } from '@/stores/combatStore'
 import type { CombatUnit } from '@/types/combat'
 
 // ---- Team badge colors ----

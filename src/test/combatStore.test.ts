@@ -6,7 +6,6 @@ import type { CombatMapDefinition } from '@/types/grid'
 import type { CombatSetup } from '@/types/combat'
 import {
   SPELL_MELEE_STRIKE,
-  SPELL_FIREBALL,
 } from '@/game/combat/spellDefinitions'
 
 // ---- Simple 5x5 open map for testing ----
