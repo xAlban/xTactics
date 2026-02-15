@@ -9,12 +9,7 @@ import {
 import type { PlayerClass } from '@/types/player'
 
 describe('modelRegistry', () => {
-  const allClasses: PlayerClass[] = [
-    'bomberman',
-    'archer',
-    'knight',
-    'mage',
-  ]
+  const allClasses: PlayerClass[] = ['bomberman', 'archer', 'knight', 'mage']
 
   it('has a model config for every player class', () => {
     for (const cls of allClasses) {

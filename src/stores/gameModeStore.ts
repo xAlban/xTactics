@@ -35,18 +35,12 @@ export const useGameModeStore = create<GameModeState>()(
   persist(
     (set, get) => ({
       mode: 'normal',
-      player: createPlayer(
-        'player1',
-        'xAlban',
-        'bomberman',
-        DEFAULT_INVENTORY,
-      ),
+      player: createPlayer('player1', 'xAlban', 'bomberman', DEFAULT_INVENTORY),
       playerPosition: { x: 0, z: 0 },
       targetPosition: null,
       activeCombatSetup: null,
 
-      enterCombat: (setup) =>
-        set({ mode: 'combat', activeCombatSetup: setup }),
+      enterCombat: (setup) => set({ mode: 'combat', activeCombatSetup: setup }),
 
       exitCombat: () =>
         set({
@@ -66,9 +60,7 @@ export const useGameModeStore = create<GameModeState>()(
       addItemToInventory: (item, quantity = 1) => {
         const { player } = get()
         const inventory = [...player.inventory]
-        const existing = inventory.find(
-          (slot) => slot.item.id === item.id,
-        )
+        const existing = inventory.find((slot) => slot.item.id === item.id)
 
         if (existing && item.stackable) {
           // ---- Stack onto existing slot ----
@@ -85,9 +77,7 @@ export const useGameModeStore = create<GameModeState>()(
       removeItemFromInventory: (itemId, quantity = 1) => {
         const { player } = get()
         const inventory = [...player.inventory]
-        const index = inventory.findIndex(
-          (slot) => slot.item.id === itemId,
-        )
+        const index = inventory.findIndex((slot) => slot.item.id === itemId)
         if (index === -1) return
 
         const slot = inventory[index]!
@@ -113,8 +103,7 @@ export const useGameModeStore = create<GameModeState>()(
 
         const inventorySlot = player.inventory[slotIndex]!
         const item = inventorySlot.item
-        if (item.category !== 'equipment' || !item.equipmentSlot)
-          return
+        if (item.category !== 'equipment' || !item.equipmentSlot) return
 
         // ---- Determine target slot (rings can go in ring1 or ring2) ----
         let targetSlot: EquipmentSlot = item.equipmentSlot
@@ -138,8 +127,7 @@ export const useGameModeStore = create<GameModeState>()(
           // ---- Check if old item stacks with something in inventory ----
           const existingSwap = inventory.find(
             (s) =>
-              s.item.id === currentEquipped.id &&
-              currentEquipped.stackable,
+              s.item.id === currentEquipped.id && currentEquipped.stackable,
           )
           if (existingSwap) {
             existingSwap.quantity += 1

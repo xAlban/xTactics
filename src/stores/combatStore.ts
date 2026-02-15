@@ -66,6 +66,10 @@ interface CombatState {
   interactionMode: 'movement' | 'spell'
   spellTargetScreenPos: { x: number; y: number } | null
 
+  // ---- Attack animation state ----
+  lastAttackTarget: TileCoord | null
+  lastAttackUnitIndex: number | null
+
   // ---- Hovered unit info ----
   hoveredUnit: CombatUnit | null
   hoveredUnitScreenPos: { x: number; y: number } | null
@@ -136,6 +140,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   interactionMode: 'movement',
   spellTargetScreenPos: null,
 
+  lastAttackTarget: null,
+  lastAttackUnitIndex: null,
+
   hoveredUnit: null,
   hoveredUnitScreenPos: null,
 
@@ -192,6 +199,8 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       spellHoveredTarget: null,
       interactionMode: 'movement',
       spellTargetScreenPos: null,
+      lastAttackTarget: null,
+      lastAttackUnitIndex: null,
     })
 
     // ---- Compute reachable tiles for first active unit ----
@@ -420,6 +429,8 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       spellHoveredTarget: null,
       interactionMode: 'movement',
       spellTargetScreenPos: null,
+      lastAttackTarget: null,
+      lastAttackUnitIndex: null,
     })
 
     get().computeReachable()
@@ -622,6 +633,17 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       // ---- Emit damage floating number at the target ----
       floatingStore.addFloatingNumber(damage, 'damage', targetCoord)
     }
+
+    // ---- Set attack animation target ----
+    set({
+      lastAttackTarget: targetCoord,
+      lastAttackUnitIndex: activeUnitIndex,
+    })
+
+    // ---- Clear attack target after animation duration ----
+    setTimeout(() => {
+      set({ lastAttackTarget: null, lastAttackUnitIndex: null })
+    }, 800)
 
     // ---- Clear spell state ----
     set({

@@ -19,10 +19,9 @@ vi.mock('@react-three/drei', () => ({
     () => ({ scene: { traverse: () => {}, children: [] }, animations: [] }),
     { preload: () => {} },
   ),
-  useFBX: Object.assign(
-    () => ({ traverse: () => {}, children: [] }),
-    { preload: () => {} },
-  ),
+  useFBX: Object.assign(() => ({ traverse: () => {}, children: [] }), {
+    preload: () => {},
+  }),
 }))
 
 // ---- Mock map components that rely on Three.js APIs ----

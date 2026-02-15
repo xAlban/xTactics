@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo, Suspense } from 'react'
+import { useRef, useCallback, useMemo, useState, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { ShaderMaterial, Color } from 'three'
 import type { Group, Intersection } from 'three'
@@ -9,6 +9,10 @@ import ModelErrorBoundary from '@/game/models/ModelErrorBoundary'
 import { UNIT_MODELS } from '@/game/models/modelRegistry'
 import { useGameModeStore } from '@/stores/gameModeStore'
 import { PORTAL_COMBAT_SETUP } from '@/game/combat/combatSetups'
+import {
+  shortestAngleDelta,
+  facingAngleFromDirection,
+} from '@/game/utils/rotationUtils'
 
 const FLOOR_SIZE = 500 // Increased size for more "infinite" feel
 const MOVE_SPEED = 5
@@ -19,12 +23,21 @@ const PORTAL_POSITION: [number, number, number] = [5, 1, 5]
 
 // ---- Player cube settings ----
 const CUBE_SIZE = 0.7
-const CUBE_Y = CUBE_SIZE / 2
 
+// ---- Rotation lerp speed (radians per second) ----
+const ROTATION_SPEED = 12
 
 function NormalScene() {
   const meshRef = useRef<Group>(null)
   const targetRef = useRef<{ x: number; z: number } | null>(null)
+
+  // ---- Facing rotation state ----
+  const facingRef = useRef(0)
+  const currentRotationRef = useRef(0)
+
+  // ---- Track moving state for animation (only update on change) ----
+  const movingRef = useRef(false)
+  const [isMovingState, setIsMovingState] = useState(false)
 
   const playerPosition = useGameModeStore((s) => s.playerPosition)
   const targetPosition = useGameModeStore((s) => s.targetPosition)
@@ -44,6 +57,8 @@ function NormalScene() {
     if (!meshRef.current) return
 
     const target = targetRef.current
+    let currentlyMoving = false
+
     if (target) {
       const dx = target.x - posRef.current.x
       const dz = target.z - posRef.current.z
@@ -55,6 +70,10 @@ function NormalScene() {
         posRef.current.z = target.z
         setPlayerPosition({ x: target.x, z: target.z })
       } else {
+        // ---- Compute facing direction toward target ----
+        facingRef.current = facingAngleFromDirection(dx, dz)
+        currentlyMoving = true
+
         // ---- Move toward target ----
         const step = Math.min(delta * MOVE_SPEED, dist)
         posRef.current.x += (dx / dist) * step
@@ -64,9 +83,30 @@ function NormalScene() {
       }
     }
 
+    // ---- Only trigger re-render when moving state actually changes ----
+    if (currentlyMoving !== movingRef.current) {
+      movingRef.current = currentlyMoving
+      setIsMovingState(currentlyMoving)
+    }
+
+    // ---- Smooth rotation interpolation (shortest path) ----
+    const angleDelta = shortestAngleDelta(
+      currentRotationRef.current,
+      facingRef.current,
+    )
+    if (Math.abs(angleDelta) > 0.01) {
+      const step =
+        Math.sign(angleDelta) *
+        Math.min(Math.abs(angleDelta), delta * ROTATION_SPEED)
+      currentRotationRef.current += step
+    } else {
+      currentRotationRef.current = facingRef.current
+    }
+    meshRef.current.rotation.y = currentRotationRef.current
+
     // ---- Position fully controlled here to avoid JSX prop conflicts ----
     meshRef.current.position.x = posRef.current.x
-    meshRef.current.position.y = CUBE_Y
+    meshRef.current.position.y = 0
     meshRef.current.position.z = posRef.current.z
   })
 
@@ -153,7 +193,12 @@ function NormalScene() {
               </mesh>
             }
           >
-            <ModelRenderer config={modelConfig} />
+            <ModelRenderer
+              config={{
+                ...modelConfig,
+                animationState: isMovingState ? 'walk' : 'idle',
+              }}
+            />
           </Suspense>
         </ModelErrorBoundary>
       </group>

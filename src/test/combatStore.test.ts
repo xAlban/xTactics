@@ -57,6 +57,8 @@ beforeEach(() => {
     spellHoveredTarget: null,
     interactionMode: 'movement',
     spellTargetScreenPos: null,
+    lastAttackTarget: null,
+    lastAttackUnitIndex: null,
     hoveredUnit: null,
     hoveredUnitScreenPos: null,
   })
@@ -696,5 +698,75 @@ describe('floating numbers', () => {
     // ---- AP cost should still be emitted ----
     const apNumber = numbers.find((n) => n.type === 'ap')
     expect(apNumber).toBeDefined()
+  })
+})
+
+describe('attack animation target', () => {
+  it('sets lastAttackTarget and lastAttackUnitIndex on castSpell', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    const state = useCombatStore.getState()
+    expect(state.lastAttackTarget).toEqual({ col: 2, row: 3 })
+    expect(state.lastAttackUnitIndex).toBe(0)
+  })
+
+  it('clears lastAttackTarget after 800ms timeout', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().lastAttackTarget).not.toBeNull()
+
+    vi.advanceTimersByTime(800)
+
+    expect(useCombatStore.getState().lastAttackTarget).toBeNull()
+    expect(useCombatStore.getState().lastAttackUnitIndex).toBeNull()
+  })
+
+  it('resets lastAttackTarget on initCombat', () => {
+    useCombatStore.setState({
+      lastAttackTarget: { col: 1, row: 1 },
+      lastAttackUnitIndex: 0,
+    })
+
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 4, row: 4 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    const state = useCombatStore.getState()
+    expect(state.lastAttackTarget).toBeNull()
+    expect(state.lastAttackUnitIndex).toBeNull()
+  })
+
+  it('resets lastAttackTarget on endTurn', () => {
+    const setup = makeSetup(
+      [{ col: 2, row: 2 }],
+      [{ id: 'e1', name: 'Dummy', position: { col: 2, row: 3 } }],
+    )
+    useCombatStore.getState().initCombat(setup, [testPlayer])
+
+    useCombatStore.getState().selectSpell(SPELL_MELEE_STRIKE)
+    useCombatStore.getState().castSpell({ col: 2, row: 3 })
+
+    expect(useCombatStore.getState().lastAttackTarget).not.toBeNull()
+
+    useCombatStore.getState().endTurn()
+
+    expect(useCombatStore.getState().lastAttackTarget).toBeNull()
+    expect(useCombatStore.getState().lastAttackUnitIndex).toBeNull()
   })
 })

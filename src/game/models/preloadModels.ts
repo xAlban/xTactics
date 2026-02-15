@@ -6,6 +6,6 @@ import { getAllModelPaths } from '@/game/models/modelRegistry'
 export function preloadAllModels(): void {
   const paths = getAllModelPaths()
   for (const path of paths) {
-      useGLTF.preload(path)
+    useGLTF.preload(path)
   }
 }

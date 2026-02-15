@@ -91,6 +91,8 @@ function BattleScene() {
   const isMoving = useCombatStore((s) => s.isMoving)
   const previewPath = useCombatStore((s) => s.previewPath)
   const setIsMoving = useCombatStore((s) => s.setIsMoving)
+  const lastAttackTarget = useCombatStore((s) => s.lastAttackTarget)
+  const lastAttackUnitIndex = useCombatStore((s) => s.lastAttackUnitIndex)
 
   const handleMoveComplete = useCallback(() => {
     setIsMoving(false)
@@ -109,7 +111,6 @@ function BattleScene() {
 
       <group rotation={[0, ROTATION_Y, 0]}>
         {units.map((unit, i) => {
-          if (unit.defeated) return null
           // ---- Only animate the active unit's movement ----
           const isActive = i === activeUnitIndex
           return (
@@ -122,6 +123,8 @@ function BattleScene() {
               movementPath={isActive ? movementPath : []}
               isMoving={isActive && isMoving}
               onMoveComplete={isActive ? handleMoveComplete : undefined}
+              attackTarget={i === lastAttackUnitIndex ? lastAttackTarget : null}
+              defeated={unit.defeated}
             />
           )
         })}

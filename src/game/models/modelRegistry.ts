@@ -1,6 +1,9 @@
 import type { PlayerClass } from '@/types/player'
 import type { UnitTeam } from '@/types/combat'
 
+// ---- Animation states for 3D models ----
+export type AnimationState = 'idle' | 'walk' | 'attack' | 'death'
+
 // ---- Configuration for a single 3D model ----
 export interface ModelConfig {
   path: string
@@ -9,7 +12,7 @@ export interface ModelConfig {
   yOffset: number
   fallbackColor: string
   animationMap?: Record<string, string>
-  isMoving?: boolean
+  animationState?: AnimationState
 }
 
 // ---- Model configs per player class ----
@@ -20,7 +23,12 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     rotationY: 0,
     yOffset: 0,
     fallbackColor: '#c0392b',
-    animationMap: { idle: 'Idle', walk: 'Walk', attack: 'Attack' },
+    animationMap: {
+      idle: 'Idle',
+      walk: 'Walk',
+      attack: 'Attack',
+      death: 'Death',
+    },
   },
   archer: {
     path: '/models/units/BaseCharacter.gltf',
@@ -28,7 +36,12 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     rotationY: 0,
     yOffset: 0,
     fallbackColor: '#27ae60',
-    animationMap: { idle: 'Idle', walk: 'Walk', attack: 'Attack' },
+    animationMap: {
+      idle: 'Idle',
+      walk: 'Walk',
+      attack: 'Attack',
+      death: 'Death',
+    },
   },
   knight: {
     path: '/models/units/BaseCharacter.gltf',
@@ -36,7 +49,12 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     rotationY: 0,
     yOffset: 0,
     fallbackColor: '#2980b9',
-    animationMap: { idle: 'Idle', walk: 'Walk', attack: 'Attack' },
+    animationMap: {
+      idle: 'Idle',
+      walk: 'Walk',
+      attack: 'Attack',
+      death: 'Death',
+    },
   },
   mage: {
     path: '/models/units/Wizard.gltf',
@@ -44,7 +62,12 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     rotationY: 0,
     yOffset: 0,
     fallbackColor: '#8e44ad',
-    animationMap: { idle: 'Idle', walk: 'Walk', attack: 'Attack' },
+    animationMap: {
+      idle: 'Idle',
+      walk: 'Walk',
+      attack: 'Attack',
+      death: 'Death',
+    },
   },
 }
 
@@ -59,7 +82,7 @@ export const ENEMY_MODEL: ModelConfig = {
 
 // ---- Portal model ----
 export const PORTAL_MODEL: ModelConfig = {
-  path: '/models/objects/Goblin_Male.gltf',
+  path: '/models/units/Goblin_Male.gltf',
   scale: 1.0,
   rotationY: 0,
   yOffset: 0,
