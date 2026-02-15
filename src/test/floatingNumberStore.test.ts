@@ -58,7 +58,14 @@ describe('floatingNumberStore', () => {
 
   it('setProjected updates projected numbers', () => {
     const projected = [
-      { id: 0, value: 10, type: 'damage' as const, x: 50, y: 100, opacity: 0.8 },
+      {
+        id: 0,
+        value: 10,
+        type: 'damage' as const,
+        x: 50,
+        y: 100,
+        opacity: 0.8,
+      },
       { id: 1, value: 4, type: 'ap' as const, x: 60, y: 110, opacity: 1 },
     ]
     useFloatingNumberStore.getState().setProjected(projected)

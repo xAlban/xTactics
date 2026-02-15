@@ -85,6 +85,17 @@ export default function ButtonRowPanel() {
       <button
         onClick={(e) => {
           e.stopPropagation()
+          togglePanel(PANEL_IDS.INVENTORY)
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        className={btnClass}
+      >
+        Inventory
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
           resetLayout(mode)
         }}
         onMouseDown={(e) => e.stopPropagation()}

@@ -16,16 +16,33 @@ export type EquipmentSlot =
   | 'ring1'
   | 'ring2'
 
-// ---- A piece of equipment that can go in a slot ----
-export interface EquipmentItem {
+// ---- Item categories ----
+export type ItemCategory = 'equipment' | 'consumable' | 'resource' | 'key'
+
+// ---- Equipment subcategory maps to slot groups ----
+export type EquipmentSubcategory = 'head' | 'cape' | 'belt' | 'boots' | 'ring'
+
+// ---- A game item (equipment, consumable, resource, key) ----
+export interface Item {
   id: string
   name: string
-  slot: EquipmentSlot
-  bonusStats: Partial<BonusStats>
+  description: string
+  category: ItemCategory
+  subcategory?: EquipmentSubcategory | string
+  equipmentSlot?: EquipmentSlot
+  bonusStats?: Partial<BonusStats>
+  stackable: boolean
+  icon?: string
+}
+
+// ---- A slot in the player inventory (item + quantity) ----
+export interface InventorySlot {
+  item: Item
+  quantity: number
 }
 
 // ---- Equipment loadout: one item (or null) per slot ----
-export type EquipmentLoadout = Record<EquipmentSlot, EquipmentItem | null>
+export type EquipmentLoadout = Record<EquipmentSlot, Item | null>
 
 // ---- XP and level tracking ----
 export interface LevelProgress {
@@ -44,4 +61,5 @@ export interface Player {
   baseMp: number
   bonusStats: BonusStats
   equipment: EquipmentLoadout
+  inventory: InventorySlot[]
 }

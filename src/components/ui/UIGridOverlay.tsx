@@ -8,6 +8,7 @@ import CharacterInfoPanel from './CharacterInfoPanel'
 import ButtonRowPanel from './ButtonRowPanel'
 import CharacterSheetPanel from './CharacterSheetPanel'
 import SpellPanel from './SpellPanel'
+import InventoryPanel from './InventoryPanel'
 import FloatingNumberOverlay from './FloatingNumberOverlay'
 import TileOverlayStack from './TileOverlayStack'
 import {
@@ -16,6 +17,7 @@ import {
   BUTTON_ROW_CONFIG,
   CHARACTER_SHEET_CONFIG,
   SPELL_PANEL_CONFIG,
+  INVENTORY_PANEL_CONFIG,
 } from './panelConfigs'
 
 // ---- Base panels always visible ----
@@ -32,10 +34,15 @@ const PANEL_CONTENT: Record<string, React.ReactNode> = {
   [PANEL_IDS.BUTTON_ROW]: <ButtonRowPanel />,
   [PANEL_IDS.CHARACTER_SHEET]: <CharacterSheetPanel />,
   [PANEL_IDS.SPELL_PANEL]: <SpellPanel />,
+  [PANEL_IDS.INVENTORY]: <InventoryPanel />,
 }
 
 // ---- Secondary panels toggled by actions ----
-const SECONDARY_PANELS: PanelConfig[] = [CHARACTER_SHEET_CONFIG, SPELL_PANEL_CONFIG]
+const SECONDARY_PANELS: PanelConfig[] = [
+  CHARACTER_SHEET_CONFIG,
+  SPELL_PANEL_CONFIG,
+  INVENTORY_PANEL_CONFIG,
+]
 
 export default function UIGridOverlay() {
   const mode = useGameModeStore((s) => s.mode)
@@ -43,6 +50,8 @@ export default function UIGridOverlay() {
   const combatLayout = useUILayoutStore((s) => s.combatLayout)
   const openPanels = useUILayoutStore((s) => s.openPanels)
   const closePanel = useUILayoutStore((s) => s.closePanel)
+  const panelZOrder = useUILayoutStore((s) => s.panelZOrder)
+  const bringToFront = useUILayoutStore((s) => s.bringToFront)
   const layouts = mode === 'normal' ? normalLayout : combatLayout
   const updatePanelLayout = useUILayoutStore((s) => s.updatePanelLayout)
 
@@ -85,6 +94,8 @@ export default function UIGridOverlay() {
             onLayoutChange={(l) => handleLayoutChange(config.id, l)}
             closable
             onClose={() => closePanel(config.id)}
+            zIndex={panelZOrder[config.id] ?? 0}
+            onPanelFocus={() => bringToFront(config.id)}
           >
             {PANEL_CONTENT[config.id]}
           </UIPanel>

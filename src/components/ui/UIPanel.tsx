@@ -8,6 +8,8 @@ interface UIPanelProps {
   onLayoutChange: (layout: PanelLayout) => void
   closable?: boolean
   onClose?: () => void
+  zIndex?: number
+  onPanelFocus?: () => void
   children: React.ReactNode
 }
 
@@ -40,6 +42,8 @@ export default function UIPanel({
   onLayoutChange,
   closable,
   onClose,
+  zIndex,
+  onPanelFocus,
   children,
 }: UIPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -278,8 +282,12 @@ export default function UIPanel({
         ...style,
         pointerEvents: 'auto',
         cursor: isDragging ? 'grabbing' : 'grab',
+        zIndex: zIndex ?? 'auto',
       }}
-      onMouseDown={handleMouseDown}
+      onMouseDown={(e) => {
+        onPanelFocus?.()
+        handleMouseDown(e)
+      }}
     >
       {/* ---- Close button for secondary panels ---- */}
       {closable && onClose && (
@@ -290,7 +298,7 @@ export default function UIPanel({
             onClose()
           }}
           onMouseDown={(e) => e.stopPropagation()}
-          className="absolute top-1 right-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-xs text-white/60 hover:bg-white/20 hover:text-white"
+          className="absolute top-1 right-1 z-10 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-xs text-white/60 hover:bg-white/20 hover:text-white"
         >
           ✕
         </button>

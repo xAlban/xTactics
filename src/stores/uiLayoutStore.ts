@@ -10,6 +10,7 @@ export const PANEL_IDS = {
   BUTTON_ROW: 'buttonRow',
   CHARACTER_SHEET: 'characterSheet',
   SPELL_PANEL: 'spellPanel',
+  INVENTORY: 'inventory',
 } as const
 
 type LayoutMap = Record<string, PanelLayout>
@@ -58,6 +59,9 @@ interface UILayoutState {
   combatLayout: LayoutMap
   // ---- Tracks which secondary panels are open ----
   openPanels: Record<string, boolean>
+  // ---- Z-index ordering for panel stacking (higher = in front) ----
+  panelZOrder: Record<string, number>
+  panelZCounter: number
 
   // ---- Actions ----
   updatePanelLayout: (
@@ -69,6 +73,7 @@ interface UILayoutState {
   getLayout: (mode: GameMode) => LayoutMap
   togglePanel: (panelId: string) => void
   closePanel: (panelId: string) => void
+  bringToFront: (panelId: string) => void
 }
 
 export const useUILayoutStore = create<UILayoutState>()(
@@ -77,6 +82,8 @@ export const useUILayoutStore = create<UILayoutState>()(
       normalLayout: { ...DEFAULT_NORMAL_LAYOUT },
       combatLayout: { ...DEFAULT_COMBAT_LAYOUT },
       openPanels: {},
+      panelZOrder: {},
+      panelZCounter: 0,
 
       updatePanelLayout: (mode, panelId, layout) =>
         set((state) => {
@@ -114,7 +121,24 @@ export const useUILayoutStore = create<UILayoutState>()(
             [panelId]: false,
           },
         })),
+
+      // ---- Bring a panel to the front by assigning it the next z-index ----
+      bringToFront: (panelId) =>
+        set((state) => {
+          const next = state.panelZCounter + 1
+          return {
+            panelZCounter: next,
+            panelZOrder: { ...state.panelZOrder, [panelId]: next },
+          }
+        }),
     }),
-    { name: 'xtactics-ui-layout' },
+    {
+      name: 'xtactics-ui-layout',
+      // ---- Only persist panel layouts, not open/close state or z-order ----
+      partialize: (state) => ({
+        normalLayout: state.normalLayout,
+        combatLayout: state.combatLayout,
+      }),
+    },
   ),
 )

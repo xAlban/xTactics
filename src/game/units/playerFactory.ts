@@ -4,6 +4,7 @@ import type {
   BonusStats,
   EquipmentLoadout,
   LevelProgress,
+  InventorySlot,
 } from '@/types/player'
 
 // ---- XP required to reach a given level ----
@@ -39,6 +40,7 @@ export function createPlayer(
   id: string,
   name: string,
   playerClass: PlayerClass,
+  inventory: InventorySlot[] = [],
 ): Player {
   return {
     id,
@@ -53,6 +55,7 @@ export function createPlayer(
     baseMp: 3,
     bonusStats: createDefaultBonusStats(),
     equipment: createEmptyEquipment(),
+    inventory,
   }
 }
 
@@ -71,7 +74,37 @@ export function createEnemy(id: string, name: string): Player {
     baseMp: 3,
     bonusStats: createDefaultBonusStats(),
     equipment: createEmptyEquipment(),
+    inventory: [],
   }
+}
+
+// ---- Compute effective stats: base bonusStats + all equipment bonuses ----
+export function getEffectiveStats(player: Player): BonusStats {
+  const stats = { ...player.bonusStats }
+
+  for (const item of Object.values(player.equipment)) {
+    if (!item?.bonusStats) continue
+    for (const [key, val] of Object.entries(item.bonusStats)) {
+      stats[key as keyof BonusStats] += val as number
+    }
+  }
+
+  return stats
+}
+
+// ---- Compute only the equipment bonus portion of stats ----
+export function getEquipmentBonusStats(player: Player): Partial<BonusStats> {
+  const bonus: Partial<BonusStats> = {}
+
+  for (const item of Object.values(player.equipment)) {
+    if (!item?.bonusStats) continue
+    for (const [key, val] of Object.entries(item.bonusStats)) {
+      const k = key as keyof BonusStats
+      bonus[k] = (bonus[k] ?? 0) + (val as number)
+    }
+  }
+
+  return bonus
 }
 
 // ---- Add XP with overflow handling for multi-level-ups ----

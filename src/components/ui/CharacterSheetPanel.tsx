@@ -1,4 +1,5 @@
 import { useGameModeStore } from '@/stores/gameModeStore'
+import { getEquipmentBonusStats } from '@/game/units/playerFactory'
 import type { StatKey } from '@/types/player'
 
 // ---- Labels for display ----
@@ -12,6 +13,7 @@ const STAT_LABELS: Record<StatKey, string> = {
 
 export default function CharacterSheetPanel() {
   const player = useGameModeStore((s) => s.player)
+  const equipBonus = getEquipmentBonusStats(player)
 
   return (
     <div className="flex h-full w-full flex-col gap-2 p-3 pt-6">
@@ -38,15 +40,28 @@ export default function CharacterSheetPanel() {
         <span>MP: {player.baseMp}</span>
       </div>
 
-      {/* ---- Bonus stats ---- */}
+      {/* ---- Bonus stats with equipment bonuses ---- */}
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-bold text-white/50">Stats</span>
-        {(Object.keys(STAT_LABELS) as StatKey[]).map((key) => (
-          <div key={key} className="flex justify-between text-xs text-white/60">
-            <span>{STAT_LABELS[key]}</span>
-            <span>{player.bonusStats[key]}</span>
-          </div>
-        ))}
+        {(Object.keys(STAT_LABELS) as StatKey[]).map((key) => {
+          const base = player.bonusStats[key]
+          const bonus = equipBonus[key] ?? 0
+
+          return (
+            <div
+              key={key}
+              className="flex justify-between text-xs text-white/60"
+            >
+              <span>{STAT_LABELS[key]}</span>
+              <span>
+                {base}
+                {bonus > 0 && (
+                  <span className="text-green-400"> (+{bonus})</span>
+                )}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       {/* ---- Equipment ---- */}

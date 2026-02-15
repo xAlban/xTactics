@@ -1,5 +1,6 @@
 import { useCombatStore } from '@/stores/combatStore'
 import { computeDamagePreview } from '@/game/combat/spellUtils'
+import { getEffectiveStats } from '@/game/units/playerFactory'
 import { UnitInfoCard } from './UnitInfoOverlay'
 import { DamagePreviewCard } from './DamagePreviewOverlay'
 
@@ -29,9 +30,10 @@ export default function TileOverlayStack() {
     )
 
     if (targetUnit) {
+      // ---- Use effective stats (base + equipment bonuses) for preview ----
       const preview = computeDamagePreview(
         selectedSpell,
-        activeUnit.player.bonusStats,
+        getEffectiveStats(activeUnit.player),
       )
       damagePreview = (
         <DamagePreviewCard

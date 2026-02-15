@@ -26,9 +26,7 @@ export function UnitInfoCard({ unit }: { unit: CombatUnit }) {
         >
           {unit.team}
         </span>
-        <span className="text-xs font-bold text-white">
-          {unit.player.name}
-        </span>
+        <span className="text-xs font-bold text-white">{unit.player.name}</span>
       </div>
 
       {/* ---- HP bar ---- */}

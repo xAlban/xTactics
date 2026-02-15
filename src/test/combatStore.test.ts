@@ -4,9 +4,7 @@ import { useFloatingNumberStore } from '@/stores/floatingNumberStore'
 import { createPlayer } from '@/game/units/playerFactory'
 import type { CombatMapDefinition } from '@/types/grid'
 import type { CombatSetup } from '@/types/combat'
-import {
-  SPELL_MELEE_STRIKE,
-} from '@/game/combat/spellDefinitions'
+import { SPELL_MELEE_STRIKE } from '@/game/combat/spellDefinitions'
 
 // ---- Simple 5x5 open map for testing ----
 const TEST_MAP: CombatMapDefinition = {

@@ -12,9 +12,7 @@ const ELEMENT_COLORS: Record<DamageElement, string> = {
 }
 
 export default function SpellPanel() {
-  const activeUnit = useCombatStore(
-    (s) => s.units[s.activeUnitIndex],
-  )
+  const activeUnit = useCombatStore((s) => s.units[s.activeUnitIndex])
   const selectedSpell = useCombatStore((s) => s.selectedSpell)
   const selectSpell = useCombatStore((s) => s.selectSpell)
   const cancelSpell = useCombatStore((s) => s.cancelSpell)

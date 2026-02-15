@@ -18,7 +18,7 @@ import {
   reconstructPath,
 } from '@/game/combat/pathfinding'
 import { getSpellRangeTiles, rollSpellDamage } from '@/game/combat/spellUtils'
-import { createEnemy } from '@/game/units/playerFactory'
+import { createEnemy, getEffectiveStats } from '@/game/units/playerFactory'
 import { generateGridTiles } from '@/game/map/gridUtils'
 import { useFloatingNumberStore } from '@/stores/floatingNumberStore'
 
@@ -316,7 +316,14 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   },
 
   executeMove: (target) => {
-    const { units, activeUnitIndex, tiles, isMoving, combatStatus, interactionMode } = get()
+    const {
+      units,
+      activeUnitIndex,
+      tiles,
+      isMoving,
+      combatStatus,
+      interactionMode,
+    } = get()
     if (isMoving || combatStatus !== 'active') return
 
     // ---- Block movement when in spell mode ----
@@ -355,9 +362,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     }
 
     // ---- Emit MP cost floating number at the destination ----
-    useFloatingNumberStore
-      .getState()
-      .addFloatingNumber(stepsUsed, 'mp', target)
+    useFloatingNumberStore.getState().addFloatingNumber(stepsUsed, 'mp', target)
 
     set({
       units: updatedUnits,
@@ -601,7 +606,11 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
     if (targetUnitIndex !== -1) {
       const targetUnit = updatedUnits[targetUnitIndex]!
-      const damage = rollSpellDamage(selectedSpell, activeUnit.player.bonusStats)
+      // ---- Use effective stats (base + equipment bonuses) for damage ----
+      const damage = rollSpellDamage(
+        selectedSpell,
+        getEffectiveStats(activeUnit.player),
+      )
       const newHp = Math.max(0, targetUnit.currentHp - damage)
 
       updatedUnits[targetUnitIndex] = {

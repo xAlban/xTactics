@@ -113,7 +113,14 @@ function GroundTile({ tile, config }: { tile: TileData; config: GridConfig }) {
         executeMove(tile.coord)
       }
     },
-    [executeMove, castSpell, isReachable, isInSpellRange, interactionMode, tile.coord],
+    [
+      executeMove,
+      castSpell,
+      isReachable,
+      isInSpellRange,
+      interactionMode,
+      tile.coord,
+    ],
   )
 
   return (

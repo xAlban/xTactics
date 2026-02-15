@@ -80,3 +80,20 @@ export const SPELL_PANEL_CONFIG: PanelConfig = {
   maxWidth: 2,
   maxHeight: 4,
 }
+
+// ---- Inventory panel config: secondary panel, fixed size, free positioning ----
+export const INVENTORY_PANEL_CONFIG: PanelConfig = {
+  id: PANEL_IDS.INVENTORY,
+  defaultLayout: {
+    gridCol: 2,
+    gridRow: 1,
+    gridWidth: 6,
+    gridHeight: 6,
+  },
+  resizable: false,
+  gridLocked: false,
+  minWidth: 6,
+  minHeight: 6,
+  maxWidth: 6,
+  maxHeight: 6,
+}

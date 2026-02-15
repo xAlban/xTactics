@@ -11,7 +11,7 @@
     "electron:dev": "vite --mode electron",
     "build": "tsc -b && vite build",
     "electron:build": "tsc -b && vite build --mode electron && electron-builder",
-    "lint": "eslint .",
+    "lint": "tsc --noEmit && eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
