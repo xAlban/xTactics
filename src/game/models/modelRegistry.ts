@@ -18,7 +18,7 @@ export interface ModelConfig {
 // ---- Model configs per player class ----
 export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
   bomberman: {
-    path: '/models/units/Kimono_Male.gltf',
+    path: 'models/units/Kimono_Male.gltf',
     scale: 0.5,
     rotationY: 0,
     yOffset: 0,
@@ -31,7 +31,7 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     },
   },
   archer: {
-    path: '/models/units/BaseCharacter.gltf',
+    path: 'models/units/BaseCharacter.gltf',
     scale: 0.5,
     rotationY: 0,
     yOffset: 0,
@@ -44,7 +44,7 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     },
   },
   knight: {
-    path: '/models/units/BaseCharacter.gltf',
+    path: 'models/units/BaseCharacter.gltf',
     scale: 0.5,
     rotationY: 0,
     yOffset: 0,
@@ -57,7 +57,7 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     },
   },
   mage: {
-    path: '/models/units/Wizard.gltf',
+    path: 'models/units/Wizard.gltf',
     scale: 0.5,
     rotationY: 0,
     yOffset: 0,
@@ -73,7 +73,7 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
 
 // ---- Enemy default model ----
 export const ENEMY_MODEL: ModelConfig = {
-  path: '/models/units/Goblin_Male.gltf',
+  path: 'models/units/Goblin_Male.gltf',
   scale: 0.5,
   rotationY: 0,
   yOffset: 0,
@@ -82,7 +82,7 @@ export const ENEMY_MODEL: ModelConfig = {
 
 // ---- Portal model ----
 export const PORTAL_MODEL: ModelConfig = {
-  path: '/models/units/Goblin_Male.gltf',
+  path: 'models/units/Goblin_Male.gltf',
   scale: 1.0,
   rotationY: 0,
   yOffset: 0,

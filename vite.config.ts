@@ -39,6 +39,7 @@ export default defineConfig(async ({ mode }) => {
 
   return {
     plugins,
+    base: mode === 'electron' ? './' : '/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
