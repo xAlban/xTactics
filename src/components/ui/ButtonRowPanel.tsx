@@ -7,6 +7,7 @@ export default function ButtonRowPanel() {
   const exitCombat = useGameModeStore((s) => s.exitCombat)
   const resetLayout = useUILayoutStore((s) => s.resetLayout)
   const togglePanel = useUILayoutStore((s) => s.togglePanel)
+  const bringToFront = useUILayoutStore((s) => s.bringToFront)
 
   // ---- Combat state for PASS TURN button ----
   const passTurn = useCombatStore((s) => s.passTurn)
@@ -49,6 +50,7 @@ export default function ButtonRowPanel() {
           onClick={(e) => {
             e.stopPropagation()
             togglePanel(PANEL_IDS.SPELL_PANEL)
+            bringToFront(PANEL_IDS.SPELL_PANEL)
           }}
           onMouseDown={(e) => e.stopPropagation()}
           className={btnClass}
@@ -75,6 +77,7 @@ export default function ButtonRowPanel() {
         onClick={(e) => {
           e.stopPropagation()
           togglePanel(PANEL_IDS.CHARACTER_SHEET)
+          bringToFront(PANEL_IDS.CHARACTER_SHEET)
         }}
         onMouseDown={(e) => e.stopPropagation()}
         className={btnClass}
@@ -86,6 +89,7 @@ export default function ButtonRowPanel() {
         onClick={(e) => {
           e.stopPropagation()
           togglePanel(PANEL_IDS.INVENTORY)
+          bringToFront(PANEL_IDS.INVENTORY)
         }}
         onMouseDown={(e) => e.stopPropagation()}
         className={btnClass}

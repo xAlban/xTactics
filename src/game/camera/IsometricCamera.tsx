@@ -5,7 +5,7 @@ import { MOUSE } from 'three'
 const ISOMETRIC_POLAR_ANGLE = Math.atan(Math.SQRT2)
 const DISTANCE = 100
 
-const INITIAL_X = DISTANCE * Math.cos(Math.PI / 4)
+const INITIAL_X = Math.PI / 4
 const INITIAL_Y = DISTANCE * Math.sin(Math.atan(Math.SQRT2))
 const INITIAL_Z = DISTANCE * Math.sin(Math.PI / 4)
 
