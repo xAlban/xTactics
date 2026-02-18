@@ -1,5 +1,9 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, Suspense } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import { UNIT_MODELS } from '@/game/models/modelRegistry'
+import ModelRenderer from '@/game/models/GLTFModel'
 import type {
   EquipmentSlot,
   Item,
@@ -19,6 +23,7 @@ import {
   KeyRound,
   Package,
 } from 'lucide-react'
+import { MOUSE } from 'three'
 
 // ---- Map icon string to Lucide component ----
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -31,14 +36,6 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Sparkles,
   Circle,
   KeyRound,
-}
-
-// ---- Player class colors (matches modelRegistry) ----
-const CLASS_COLORS: Record<string, string> = {
-  bomberman: '#c0392b',
-  archer: '#27ae60',
-  knight: '#2980b9',
-  mage: '#8e44ad',
 }
 
 // ---- Equipment slot display order and labels ----
@@ -413,24 +410,48 @@ export default function InventoryPanel() {
     [unequipItem],
   )
 
-  const classColor = CLASS_COLORS[player.playerClass] ?? '#ffffff'
-
   return (
     <div ref={panelRef} className="relative flex h-full w-full gap-0 pt-6">
       {/* ---- Left column: Player model + equipment slots ---- */}
-      <div className="flex w-[45%] flex-col items-center gap-1 border-r border-white/10 p-2">
-        {/* ---- Player model placeholder ---- */}
-        <div
-          className="mb-2 flex aspect-square w-full max-w-[120px] items-center justify-center rounded"
-          style={{ backgroundColor: classColor }}
-        >
-          <span className="text-xs font-bold text-white/70 capitalize">
-            {player.playerClass}
-          </span>
+      <div className="flex flex-row w-[45%] items-center gap-1 border-r border-white/10 p-2 relative">
+        {/* ---- Player model ---- */}
+        <div className="mb-2 flex w-full h-full items-center justify-center">
+          <Canvas camera={{ position: [0, 3, 6], fov: 45 }}>
+            <ambientLight intensity={0.7} />
+            <directionalLight position={[5, 5, 5]} intensity={1.5} />
+            <group position={[-0.5, 0, 0]}>
+              <Suspense fallback={null}>
+                <ModelRenderer
+                  config={{
+                    ...UNIT_MODELS[player.playerClass],
+                    scale: 0.5,
+                    yOffset: -1,
+                    animationState: 'idle',
+                  }}
+                />
+              </Suspense>
+            </group>
+
+            <OrbitControls
+              makeDefault
+              enableZoom={true}
+              enablePan={false}
+              enableRotate={true}
+              // ---- Zoom bounds for orthographic camera ----
+              minZoom={20}
+              maxZoom={120}
+              // ---- Only middle mouse button triggers rotation ----
+              mouseButtons={{
+                LEFT: -1 as MOUSE,
+                MIDDLE: MOUSE.ROTATE,
+              }}
+              target={[0, 0, 0]}
+            />
+          </Canvas>
         </div>
 
         {/* ---- Equipment slots ---- */}
-        <div className="flex w-full flex-col gap-1">
+        <div className="flex absolute right-0 w-[40%] flex-col gap-1">
           {EQUIPMENT_SLOTS.map(({ slot, label }) => (
             <EquipmentSlotBox
               key={slot}
