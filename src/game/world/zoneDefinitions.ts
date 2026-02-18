@@ -72,7 +72,7 @@ const grassObjects: ZoneObject[] = [
       [-55, -70],
       [-80, -55],
     ],
-    { sizeX: 2, sizeZ: 2, scale: 1.2, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 3, randomRotation: true },
   ),
   ...scatter(
     'meadow-tree-b',
@@ -81,13 +81,13 @@ const grassObjects: ZoneObject[] = [
       [-40, -60],
       [-60, -40],
     ],
-    { sizeX: 2, sizeZ: 2, scale: 1.0, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 2.5, randomRotation: true },
   ),
   ...scatter(
     'meadow-tree-c',
     'common-tree-5',
     [[-75, -35]],
-    { sizeX: 2, sizeZ: 2, scale: 1.1, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 2, randomRotation: true },
   ),
 
   // ================ DENSE FOREST (top-right) ================
@@ -105,7 +105,7 @@ const grassObjects: ZoneObject[] = [
       [88, -45],
       [85, -25],
     ],
-    { sizeX: 2, sizeZ: 2, scale: 1.3, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 5, randomRotation: true },
   ),
   // ---- Interior dense trees ----
   ...scatter(
@@ -121,7 +121,7 @@ const grassObjects: ZoneObject[] = [
       [70, -40],
       [80, -50],
     ],
-    { sizeX: 2, sizeZ: 2, scale: 1.1, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 3, randomRotation: true },
   ),
   ...scatter(
     'forest-inner-2',
@@ -135,7 +135,7 @@ const grassObjects: ZoneObject[] = [
       [75, -70],
       [85, -35],
     ],
-    { sizeX: 2, sizeZ: 2, scale: 1.0, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 3, randomRotation: true },
   ),
   ...scatter(
     'forest-inner-3',
@@ -147,7 +147,7 @@ const grassObjects: ZoneObject[] = [
       [40, -35],
       [60, -35],
     ],
-    { sizeX: 2, sizeZ: 2, scale: 0.9, randomRotation: true },
+    { sizeX: 2, sizeZ: 2, scale: 3, randomRotation: true },
   ),
   // ---- Forest undergrowth (ferns and plants) ----
   ...scatter(
@@ -163,7 +163,7 @@ const grassObjects: ZoneObject[] = [
       [62, -62],
       [78, -55],
     ],
-    { noCollision: true, scale: 1.2, randomRotation: true },
+    { noCollision: true, scale: 3, randomRotation: true },
   ),
   ...scatter(
     'forest-plant',
@@ -175,7 +175,7 @@ const grassObjects: ZoneObject[] = [
       [72, -42],
       [48, -38],
     ],
-    { noCollision: true, scale: 1.0, randomRotation: true },
+    { noCollision: true, scale: 2, randomRotation: true },
   ),
   // ---- Forest mushrooms ----
   ...scatter(
@@ -186,7 +186,7 @@ const grassObjects: ZoneObject[] = [
       [62, -55],
       [50, -42],
     ],
-    { noCollision: true, scale: 1.5, randomRotation: true },
+    { noCollision: true, scale: 3, randomRotation: true },
   ),
 
   // ================ FLOWER FIELD (center-left) ================
@@ -207,7 +207,7 @@ const grassObjects: ZoneObject[] = [
       [-45, -25],
       [-60, 5],
     ],
-    { noCollision: true, scale: 1.5, randomRotation: true },
+    { noCollision: true, scale: 2.5, randomRotation: true },
   ),
   ...scatter(
     'flower-b',
@@ -222,7 +222,7 @@ const grassObjects: ZoneObject[] = [
       [-56, 12],
       [-44, -22],
     ],
-    { noCollision: true, scale: 1.5, randomRotation: true },
+    { noCollision: true, scale: 3, randomRotation: true },
   ),
   ...scatter(
     'flower-single-a',
@@ -234,7 +234,7 @@ const grassObjects: ZoneObject[] = [
       [-43, 15],
       [-33, -18],
     ],
-    { noCollision: true, scale: 1.8, randomRotation: true },
+    { noCollision: true, scale: 3, randomRotation: true },
   ),
   // ---- Grass tufts in the flower field ----
   ...scatter(
@@ -248,7 +248,7 @@ const grassObjects: ZoneObject[] = [
       [-60, -15],
       [-45, 12],
     ],
-    { noCollision: true, scale: 1.2, randomRotation: true },
+    { noCollision: true, scale: 2, randomRotation: true },
   ),
 
   // ================ DIRT ROAD (left edge, vertical) ================
@@ -263,7 +263,7 @@ const grassObjects: ZoneObject[] = [
       [-70, 15],
       [-70, 25],
     ],
-    { noCollision: true, scale: 2.0 },
+    { noCollision: true, scale: 3 },
   ),
   // ---- Road connecting top to flower field ----
   ...scatter(
@@ -275,7 +275,7 @@ const grassObjects: ZoneObject[] = [
       [-55, -30],
       [-50, -30],
     ],
-    { noCollision: true, scale: 2.0 },
+    { noCollision: true, scale: 3 },
   ),
 
   // ================ ROCK ROAD (diagonal, forest to portal) ================
