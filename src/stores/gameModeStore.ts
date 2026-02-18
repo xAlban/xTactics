@@ -14,6 +14,9 @@ interface GameModeState {
   playerPosition: { x: number; z: number }
   targetPosition: { x: number; z: number } | null
 
+  // ---- Callback executed when player arrives at targetPosition ----
+  pendingArrivalAction: (() => void) | null
+
   // ---- Active combat encounter definition ----
   activeCombatSetup: CombatSetup | null
 
@@ -21,6 +24,10 @@ interface GameModeState {
   enterCombat: (setup: CombatSetup) => void
   exitCombat: () => void
   setTargetPosition: (pos: { x: number; z: number }) => void
+  setTargetWithAction: (
+    pos: { x: number; z: number },
+    action: () => void,
+  ) => void
   setPlayerPosition: (pos: { x: number; z: number }) => void
   updatePlayerPosition: (pos: { x: number; z: number }) => void
 
@@ -38,6 +45,7 @@ export const useGameModeStore = create<GameModeState>()(
       player: createPlayer('player1', 'xAlban', 'bomberman', DEFAULT_INVENTORY),
       playerPosition: { x: 0, z: 0 },
       targetPosition: null,
+      pendingArrivalAction: null,
       activeCombatSetup: null,
 
       enterCombat: (setup) => set({ mode: 'combat', activeCombatSetup: setup }),
@@ -46,10 +54,16 @@ export const useGameModeStore = create<GameModeState>()(
         set({
           mode: 'normal',
           targetPosition: null,
+          pendingArrivalAction: null,
           activeCombatSetup: null,
         }),
 
-      setTargetPosition: (pos) => set({ targetPosition: pos }),
+      setTargetPosition: (pos) =>
+        set({ targetPosition: pos, pendingArrivalAction: null }),
+
+      // ---- Set movement target with a callback to fire on arrival ----
+      setTargetWithAction: (pos, action) =>
+        set({ targetPosition: pos, pendingArrivalAction: action }),
 
       setPlayerPosition: (pos) =>
         set({ playerPosition: pos, targetPosition: null }),

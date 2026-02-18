@@ -1,25 +1,25 @@
-import { useRef, useCallback, useMemo, useState, Suspense } from 'react'
+import { useRef, useState, useEffect, useMemo, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { ShaderMaterial, Color } from 'three'
-import type { Group, Intersection } from 'three'
+import type { Group } from 'three'
 import FollowCamera from '@/game/camera/FollowCamera'
-import CombatPortal from '@/game/objects/CombatPortal'
 import ModelRenderer from '@/game/models/GLTFModel'
 import ModelErrorBoundary from '@/game/models/ModelErrorBoundary'
 import { UNIT_MODELS } from '@/game/models/modelRegistry'
 import { useGameModeStore } from '@/stores/gameModeStore'
-import { PORTAL_COMBAT_SETUP } from '@/game/combat/combatSetups'
+import { useZoneStore } from '@/stores/zoneStore'
+import ZoneGround from '@/game/world/ZoneGround'
+import ZoneObjectRenderer from '@/game/world/ZoneObjectRenderer'
+import {
+  findPath,
+  getDecorationObstacles,
+} from '@/game/world/collisionUtils'
 import {
   shortestAngleDelta,
   facingAngleFromDirection,
 } from '@/game/utils/rotationUtils'
 
-const FLOOR_SIZE = 500 // Increased size for more "infinite" feel
 const MOVE_SPEED = 5
 const ARRIVAL_THRESHOLD = 0.05
-
-// ---- Portal placed at a fixed world position ----
-const PORTAL_POSITION: [number, number, number] = [5, 1, 5]
 
 // ---- Player cube settings ----
 const CUBE_SIZE = 0.7
@@ -29,7 +29,6 @@ const ROTATION_SPEED = 12
 
 function NormalScene() {
   const meshRef = useRef<Group>(null)
-  const targetRef = useRef<{ x: number; z: number } | null>(null)
 
   // ---- Facing rotation state ----
   const facingRef = useRef(0)
@@ -41,45 +40,103 @@ function NormalScene() {
 
   const playerPosition = useGameModeStore((s) => s.playerPosition)
   const targetPosition = useGameModeStore((s) => s.targetPosition)
+  const pendingArrivalAction = useGameModeStore(
+    (s) => s.pendingArrivalAction,
+  )
   const player = useGameModeStore((s) => s.player)
-  const setTargetPosition = useGameModeStore((s) => s.setTargetPosition)
   const setPlayerPosition = useGameModeStore((s) => s.setPlayerPosition)
-  const updatePlayerPosition = useGameModeStore((s) => s.updatePlayerPosition)
+  const updatePlayerPosition = useGameModeStore(
+    (s) => s.updatePlayerPosition,
+  )
 
-  // ---- Sync store target into local ref for useFrame access ----
-  targetRef.current = targetPosition
+  // ---- Get current zone from zone store ----
+  const currentZone = useZoneStore((s) => s.getCurrentZone())
+
+  // ---- Cache decoration obstacles for pathfinding ----
+  const decorations = useMemo(
+    () => getDecorationObstacles(currentZone.objects),
+    [currentZone.objects],
+  )
+
+  // ---- Waypoints the player follows (computed on target change) ----
+  const waypointsRef = useRef<{ x: number; z: number }[]>([])
+  const waypointIndexRef = useRef(0)
+
+  // ---- Sync pending action into ref for useFrame access ----
+  const pendingActionRef = useRef<(() => void) | null>(null)
+  pendingActionRef.current = pendingArrivalAction
 
   // ---- Track current position in a ref for smooth animation ----
   const posRef = useRef({ x: playerPosition.x, z: playerPosition.z })
 
-  // ---- Animate player toward click target ----
+  // ---- Sync posRef on teleport (zone change sets position without a target) ----
+  useEffect(() => {
+    if (!targetPosition && waypointsRef.current.length === 0) {
+      posRef.current.x = playerPosition.x
+      posRef.current.z = playerPosition.z
+    }
+  }, [playerPosition, targetPosition])
+
+  // ---- Compute waypoints when targetPosition changes ----
+  useEffect(() => {
+    if (!targetPosition) {
+      waypointsRef.current = []
+      waypointIndexRef.current = 0
+      return
+    }
+
+    const waypoints = findPath(
+      { x: posRef.current.x, z: posRef.current.z },
+      targetPosition,
+      decorations,
+    )
+    waypointsRef.current = waypoints
+    waypointIndexRef.current = 0
+  }, [targetPosition, decorations])
+
+  // ---- Animate player along waypoints ----
   useFrame((_, delta) => {
     if (!meshRef.current) return
 
-    const target = targetRef.current
+    const waypoints = waypointsRef.current
+    const wpIdx = waypointIndexRef.current
     let currentlyMoving = false
 
-    if (target) {
-      const dx = target.x - posRef.current.x
-      const dz = target.z - posRef.current.z
-      const dist = Math.sqrt(dx * dx + dz * dz)
+    if (waypoints.length > 0 && wpIdx < waypoints.length) {
+      const wp = waypoints[wpIdx]!
+      const dx = wp.x - posRef.current.x
+      const dz = wp.z - posRef.current.z
+      const d = Math.sqrt(dx * dx + dz * dz)
 
-      if (dist < ARRIVAL_THRESHOLD) {
-        // ---- Arrived at destination ----
-        posRef.current.x = target.x
-        posRef.current.z = target.z
-        setPlayerPosition({ x: target.x, z: target.z })
+      if (d < ARRIVAL_THRESHOLD) {
+        // ---- Reached current waypoint ----
+        posRef.current.x = wp.x
+        posRef.current.z = wp.z
+
+        if (wpIdx < waypoints.length - 1) {
+          // ---- Advance to next waypoint ----
+          waypointIndexRef.current = wpIdx + 1
+          currentlyMoving = true
+        } else {
+          // ---- Reached final waypoint ----
+          const action = pendingActionRef.current
+          setPlayerPosition({ x: wp.x, z: wp.z })
+          waypointsRef.current = []
+          waypointIndexRef.current = 0
+          if (action) action()
+        }
       } else {
-        // ---- Compute facing direction toward target ----
+        // ---- Move toward current waypoint ----
         facingRef.current = facingAngleFromDirection(dx, dz)
         currentlyMoving = true
 
-        // ---- Move toward target ----
-        const step = Math.min(delta * MOVE_SPEED, dist)
-        posRef.current.x += (dx / dist) * step
-        posRef.current.z += (dz / dist) * step
-        // ---- Update store so camera can follow ----
-        updatePlayerPosition({ x: posRef.current.x, z: posRef.current.z })
+        const step = Math.min(delta * MOVE_SPEED, d)
+        posRef.current.x += (dx / d) * step
+        posRef.current.z += (dz / d) * step
+        updatePlayerPosition({
+          x: posRef.current.x,
+          z: posRef.current.z,
+        })
       }
     }
 
@@ -110,53 +167,7 @@ function NormalScene() {
     meshRef.current.position.z = posRef.current.z
   })
 
-  // ---- Click on the floor to set movement target ----
-  const handleFloorClick = useCallback(
-    (e: { stopPropagation: () => void; intersections: Intersection[] }) => {
-      e.stopPropagation()
-      const hit = e.intersections[0]
-      if (hit) {
-        setTargetPosition({ x: hit.point.x, z: hit.point.z })
-      }
-    },
-    [setTargetPosition],
-  )
-
   const modelConfig = UNIT_MODELS[player.playerClass]
-
-  // ---- Shader material that draws a subtle grid pattern ----
-  const gridMaterial = useMemo(
-    () =>
-      new ShaderMaterial({
-        uniforms: {
-          uBaseColor: { value: new Color('#3a3a3a') },
-          uLineColor: { value: new Color('#4a4a4a') },
-          uGridSize: { value: 1.2 },
-          uLineWidth: { value: 0.03 },
-        },
-        vertexShader: `
-          varying vec2 vWorldPos;
-          void main() {
-            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-            vWorldPos = worldPosition.xz;
-            gl_Position = projectionMatrix * viewMatrix * worldPosition;
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 uBaseColor;
-          uniform vec3 uLineColor;
-          uniform float uGridSize;
-          uniform float uLineWidth;
-          varying vec2 vWorldPos;
-          void main() {
-            vec2 grid = abs(fract(vWorldPos / uGridSize - 0.5) - 0.5);
-            float line = step(min(grid.x, grid.y), uLineWidth / uGridSize);
-            gl_FragColor = vec4(mix(uBaseColor, uLineColor, line), 1.0);
-          }
-        `,
-      }),
-    [],
-  )
 
   return (
     <>
@@ -165,15 +176,15 @@ function NormalScene() {
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <directionalLight position={[-5, 8, -5]} intensity={0.4} />
 
-      {/* ---- Infinite flat floor with grid pattern ---- */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-        material={gridMaterial}
-        onClick={handleFloorClick}
-      >
-        <planeGeometry args={[FLOOR_SIZE, FLOOR_SIZE]} />
-      </mesh>
+      {/* ---- Zone ground (click always accepted) ---- */}
+      <ZoneGround
+        width={currentZone.width}
+        height={currentZone.height}
+        groundType={currentZone.groundType}
+      />
+
+      {/* ---- Zone objects (decorations, portals) ---- */}
+      <ZoneObjectRenderer objects={currentZone.objects} />
 
       {/* ---- Player model (position controlled by useFrame) ---- */}
       <group ref={meshRef}>
@@ -189,7 +200,9 @@ function NormalScene() {
             fallback={
               <mesh>
                 <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
-                <meshStandardMaterial color={modelConfig.fallbackColor} />
+                <meshStandardMaterial
+                  color={modelConfig.fallbackColor}
+                />
               </mesh>
             }
           >
@@ -202,12 +215,6 @@ function NormalScene() {
           </Suspense>
         </ModelErrorBoundary>
       </group>
-
-      {/* ---- Combat trigger portal ---- */}
-      <CombatPortal
-        position={PORTAL_POSITION}
-        combatSetup={PORTAL_COMBAT_SETUP}
-      />
     </>
   )
 }
