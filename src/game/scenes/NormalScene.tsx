@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useMemo, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
-import type { Group } from 'three'
+import type { Group, Mesh } from 'three'
 import FollowCamera from '@/game/camera/FollowCamera'
 import ModelRenderer from '@/game/models/GLTFModel'
 import ModelErrorBoundary from '@/game/models/ModelErrorBoundary'
@@ -18,7 +18,7 @@ import {
   facingAngleFromDirection,
 } from '@/game/utils/rotationUtils'
 
-const MOVE_SPEED = 5
+const MOVE_SPEED = 15
 const ARRIVAL_THRESHOLD = 0.05
 
 // ---- Player cube settings ----
@@ -27,8 +27,14 @@ const CUBE_SIZE = 0.7
 // ---- Rotation lerp speed (radians per second) ----
 const ROTATION_SPEED = 12
 
+// ---- Destination marker settings ----
+const MARKER_BOUNCE_SPEED = 3
+const MARKER_BOUNCE_HEIGHT = 0.3
+const MARKER_BASE_Y = 0.05
+
 function NormalScene() {
   const meshRef = useRef<Group>(null)
+  const markerRef = useRef<Mesh>(null)
 
   // ---- Facing rotation state ----
   const facingRef = useRef(0)
@@ -37,6 +43,12 @@ function NormalScene() {
   // ---- Track moving state for animation (only update on change) ----
   const movingRef = useRef(false)
   const [isMovingState, setIsMovingState] = useState(false)
+
+  // ---- Destination marker position (final waypoint) ----
+  const [destination, setDestination] = useState<{
+    x: number
+    z: number
+  } | null>(null)
 
   const playerPosition = useGameModeStore((s) => s.playerPosition)
   const targetPosition = useGameModeStore((s) => s.targetPosition)
@@ -82,6 +94,7 @@ function NormalScene() {
     if (!targetPosition) {
       waypointsRef.current = []
       waypointIndexRef.current = 0
+      setDestination(null)
       return
     }
 
@@ -92,6 +105,12 @@ function NormalScene() {
     )
     waypointsRef.current = waypoints
     waypointIndexRef.current = 0
+
+    // ---- Show marker at final waypoint ----
+    if (waypoints.length > 0) {
+      const last = waypoints[waypoints.length - 1]!
+      setDestination({ x: last.x, z: last.z })
+    }
   }, [targetPosition, decorations])
 
   // ---- Animate player along waypoints ----
@@ -123,6 +142,7 @@ function NormalScene() {
           setPlayerPosition({ x: wp.x, z: wp.z })
           waypointsRef.current = []
           waypointIndexRef.current = 0
+          setDestination(null)
           if (action) action()
         }
       } else {
@@ -165,6 +185,15 @@ function NormalScene() {
     meshRef.current.position.x = posRef.current.x
     meshRef.current.position.y = 0
     meshRef.current.position.z = posRef.current.z
+
+    // ---- Animate destination marker bounce ----
+    if (markerRef.current) {
+      markerRef.current.rotation.y += delta * 2
+      markerRef.current.position.y =
+        MARKER_BASE_Y +
+        Math.abs(Math.sin(Date.now() * 0.001 * MARKER_BOUNCE_SPEED)) *
+          MARKER_BOUNCE_HEIGHT
+    }
   })
 
   const modelConfig = UNIT_MODELS[player.playerClass]
@@ -185,6 +214,22 @@ function NormalScene() {
 
       {/* ---- Zone objects (decorations, portals) ---- */}
       <ZoneObjectRenderer objects={currentZone.objects} />
+
+      {/* ---- Destination marker (shows where the player is heading) ---- */}
+      {destination && (
+        <mesh
+          ref={markerRef}
+          position={[destination.x, MARKER_BASE_Y, destination.z]}
+          rotation={[0, 0, 0]}
+        >
+          <cylinderGeometry args={[0, 0.3, 0.5, 4]} />
+          <meshStandardMaterial
+            color="#2ecc71"
+            transparent
+            opacity={0.7}
+          />
+        </mesh>
+      )}
 
       {/* ---- Player model (position controlled by useFrame) ---- */}
       <group ref={meshRef}>
@@ -209,7 +254,7 @@ function NormalScene() {
             <ModelRenderer
               config={{
                 ...modelConfig,
-                animationState: isMovingState ? 'walk' : 'idle',
+                animationState: isMovingState ? 'run' : 'idle',
               }}
             />
           </Suspense>

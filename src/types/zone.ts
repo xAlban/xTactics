@@ -15,6 +15,14 @@ export interface ZoneObject {
   targetSpawnPosition?: { x: number; z: number }
   // ---- Combat portal encounter ----
   combatSetup?: CombatSetup
+  // ---- Decoration model from decorationRegistry ----
+  modelId?: string
+  // ---- Override default scale from registry ----
+  scale?: number
+  // ---- Y-axis rotation in radians ----
+  rotationY?: number
+  // ---- When true, decoration has no collision (walkable) ----
+  noCollision?: boolean
 }
 
 // ---- Full definition of a world zone ----

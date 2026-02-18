@@ -15,11 +15,13 @@ interface AABB {
 // ---- Padding around obstacles for player clearance ----
 const OBSTACLE_PADDING = 0.5
 
-// ---- Filter only decoration objects (portals are walkable) ----
+// ---- Filter only decoration objects with collision (portals and noCollision decorations are walkable) ----
 export function getDecorationObstacles(
   objects: ZoneObject[],
 ): ZoneObject[] {
-  return objects.filter((obj) => obj.type === 'decoration')
+  return objects.filter(
+    (obj) => obj.type === 'decoration' && !obj.noCollision,
+  )
 }
 
 // ---- Build padded AABB from a zone object ----

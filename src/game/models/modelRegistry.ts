@@ -2,7 +2,7 @@ import type { PlayerClass } from '@/types/player'
 import type { UnitTeam } from '@/types/combat'
 
 // ---- Animation states for 3D models ----
-export type AnimationState = 'idle' | 'walk' | 'attack' | 'death'
+export type AnimationState = 'idle' | 'walk' | 'attack' | 'death' | 'run'
 
 // ---- Configuration for a single 3D model ----
 export interface ModelConfig {
@@ -26,6 +26,7 @@ export const UNIT_MODELS: Record<PlayerClass, ModelConfig> = {
     animationMap: {
       idle: 'Idle',
       walk: 'Walk',
+      run: 'Run',
       attack: 'Attack',
       death: 'Death',
     },

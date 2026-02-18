@@ -1,9 +1,34 @@
 import { useMemo } from 'react'
 import { useGameModeStore } from '@/stores/gameModeStore'
 import { useZoneStore } from '@/stores/zoneStore'
+import { DECORATION_MODELS } from '@/game/world/decorationRegistry'
 
 // ---- SVG padding in pixels ----
 const PADDING = 8
+
+// ---- Determine minimap color for a decoration based on its model ----
+function getDecorationColor(modelId?: string): string {
+  if (!modelId) return '#8b7355'
+  if (modelId.includes('tree')) return '#1a8a2e'
+  if (modelId.includes('bush')) return '#2d7a3e'
+  if (modelId.includes('flower')) return '#d4a'
+  if (modelId.includes('grass')) return '#3a9a3a'
+  if (modelId.includes('fern') || modelId.includes('plant')) return '#2a7a2a'
+  if (modelId.includes('rock') && !modelId.includes('path')) return '#6a6a6a'
+  if (modelId.includes('path')) return '#b89a6a'
+  if (modelId.includes('mushroom')) return '#c0823a'
+  return '#8b7355'
+}
+
+// ---- Determine minimap size for a decoration ----
+function getDecorationRadius(modelId?: string): number {
+  if (!modelId) return 1
+  if (modelId.includes('tree')) return 2.5
+  if (modelId.includes('bush')) return 1.8
+  if (modelId.includes('rock') && !modelId.includes('path')) return 1.5
+  if (modelId.includes('path')) return 1.5
+  return 0.8
+}
 
 export default function MapPanel() {
   const mode = useGameModeStore((s) => s.mode)
@@ -65,25 +90,32 @@ export default function MapPanel() {
           {/* ---- Zone objects ---- */}
           {currentZone.objects.map((obj) => {
             switch (obj.type) {
-              case 'decoration':
+              case 'decoration': {
+                const color = getDecorationColor(obj.modelId)
+                const hasCollision =
+                  obj.modelId &&
+                  DECORATION_MODELS[obj.modelId]?.hasCollision &&
+                  !obj.noCollision
+                const r = getDecorationRadius(obj.modelId)
+
                 return (
-                  <rect
+                  <circle
                     key={obj.id}
-                    x={obj.position.x - obj.size.x}
-                    y={obj.position.z - obj.size.z}
-                    width={obj.size.x * 2}
-                    height={obj.size.z * 2}
-                    fill="#8b7355"
-                    opacity={0.8}
+                    cx={obj.position.x}
+                    cy={obj.position.z}
+                    r={r}
+                    fill={color}
+                    opacity={hasCollision ? 0.8 : 0.5}
                   />
                 )
+              }
               case 'combatPortal':
                 return (
                   <circle
                     key={obj.id}
                     cx={obj.position.x}
                     cy={obj.position.z}
-                    r={1}
+                    r={2}
                     fill="#e74c3c"
                     opacity={0.8}
                   />
@@ -94,7 +126,7 @@ export default function MapPanel() {
                     key={obj.id}
                     cx={obj.position.x}
                     cy={obj.position.z}
-                    r={1}
+                    r={2}
                     fill="#3498db"
                     opacity={0.8}
                   />
@@ -108,7 +140,7 @@ export default function MapPanel() {
           <circle
             cx={playerPosition.x}
             cy={playerPosition.z}
-            r={0.8}
+            r={2}
             fill="#2ecc71"
           />
         </svg>
