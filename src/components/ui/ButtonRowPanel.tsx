@@ -26,6 +26,19 @@ export default function ButtonRowPanel() {
 
   return (
     <div className="flex h-full w-full items-center gap-1 p-1">
+      {mode === 'combat' && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            useCombatStore.getState().clearTurnTimer()
+            exitCombat()
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+        >
+          Exit Combat
+        </button>
+      )}
       {mode === 'combat' && combatStatus === 'active' && isPlayerTurn && (
         <button
           onClick={(e) => {
@@ -56,20 +69,6 @@ export default function ButtonRowPanel() {
           className={btnClass}
         >
           Spells
-        </button>
-      )}
-
-      {mode === 'combat' && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            useCombatStore.getState().clearTurnTimer()
-            exitCombat()
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
-        >
-          Exit Combat
         </button>
       )}
 
