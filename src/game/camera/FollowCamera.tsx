@@ -67,7 +67,7 @@ function FollowCamera() {
         enablePan={true}
         enableRotate={true}
         // ---- Zoom bounds for orthographic camera ----
-        minZoom={20}
+        minZoom={50}
         maxZoom={120}
         // ---- Only middle mouse button triggers rotation ----
         mouseButtons={{
