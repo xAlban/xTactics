@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import App from '@/App'
 import { useGameModeStore } from '@/stores/gameModeStore'
+import { useAppStore } from '@/stores/appStore'
 
 // ---- Mock R3F since jsdom has no WebGL ----
 vi.mock('@react-three/fiber', () => ({
@@ -55,32 +56,55 @@ vi.mock('@/game/objects/CombatPortal', () => ({
   default: () => <div data-testid="combat-portal" />,
 }))
 
-// ---- Reset game mode before each test ----
+// ---- Mock GLTFModel for character screens ----
+vi.mock('@/game/models/GLTFModel', () => ({
+  default: () => <div data-testid="model-renderer" />,
+}))
+
+// ---- Reset stores before each test ----
 beforeEach(() => {
+  useAppStore.setState({ screen: 'login', loggedInUser: null })
   useGameModeStore.setState({ mode: 'normal' })
 })
 
 describe('App', () => {
-  it('renders the R3F canvas', () => {
+  it('shows login screen by default', () => {
+    render(<App />)
+    expect(screen.getByText('xTactics')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Username')).toBeInTheDocument()
+  })
+
+  it('shows character select screen after login', () => {
+    useAppStore.setState({
+      screen: 'characterSelect',
+      loggedInUser: 'testUser',
+    })
+    render(<App />)
+    expect(screen.getByText('Select Character')).toBeInTheDocument()
+  })
+
+  it('shows character create screen', () => {
+    useAppStore.setState({
+      screen: 'characterCreate',
+      loggedInUser: 'testUser',
+    })
+    render(<App />)
+    expect(
+      screen.getByRole('heading', { name: 'Create Character' }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the game when inGame', () => {
+    useAppStore.setState({ screen: 'inGame', loggedInUser: 'testUser' })
     render(<App />)
     expect(screen.getByTestId('r3f-canvas')).toBeInTheDocument()
-  })
-
-  it('shows normal scene by default', () => {
-    render(<App />)
     expect(screen.getByTestId('normal-scene')).toBeInTheDocument()
-    expect(screen.queryByTestId('battle-scene')).not.toBeInTheDocument()
   })
 
-  it('shows exit combat button in combat mode', () => {
+  it('shows battle scene in combat mode when inGame', () => {
+    useAppStore.setState({ screen: 'inGame', loggedInUser: 'testUser' })
     useGameModeStore.setState({ mode: 'combat' })
     render(<App />)
-    expect(screen.getByText('Exit Combat')).toBeInTheDocument()
     expect(screen.getByTestId('battle-scene')).toBeInTheDocument()
-  })
-
-  it('does not show exit combat button in normal mode', () => {
-    render(<App />)
-    expect(screen.queryByText('Exit Combat')).not.toBeInTheDocument()
   })
 })

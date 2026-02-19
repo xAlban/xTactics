@@ -31,6 +31,9 @@ interface GameModeState {
   setPlayerPosition: (pos: { x: number; z: number }) => void
   updatePlayerPosition: (pos: { x: number; z: number }) => void
 
+  // ---- Set player (used by character selection) ----
+  setPlayer: (player: Player) => void
+
   // ---- Inventory actions ----
   addItemToInventory: (item: Item, quantity?: number) => void
   removeItemFromInventory: (itemId: string, quantity?: number) => void
@@ -47,6 +50,9 @@ export const useGameModeStore = create<GameModeState>()(
       targetPosition: null,
       pendingArrivalAction: null,
       activeCombatSetup: null,
+
+      // ---- Replace current player (used when loading a saved character) ----
+      setPlayer: (player) => set({ player }),
 
       enterCombat: (setup) => set({ mode: 'combat', activeCombatSetup: setup }),
 
@@ -193,8 +199,11 @@ export const useGameModeStore = create<GameModeState>()(
     }),
     {
       name: 'xtactics-game-mode',
-      // ---- Only persist player data (equipment + inventory) ----
-      partialize: (state) => ({ player: state.player }),
+      // ---- Persist player data and world position ----
+      partialize: (state) => ({
+        player: state.player,
+        playerPosition: state.playerPosition,
+      }),
     },
   ),
 )
