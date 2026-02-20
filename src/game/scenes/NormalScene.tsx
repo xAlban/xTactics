@@ -1,4 +1,11 @@
-import { useRef, useState, useEffect, useMemo, Suspense } from 'react'
+import {
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  Suspense,
+} from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group, Mesh } from 'three'
 import FollowCamera from '@/game/camera/FollowCamera'
@@ -17,6 +24,8 @@ import {
   shortestAngleDelta,
   facingAngleFromDirection,
 } from '@/game/utils/rotationUtils'
+import { getZoneTerrain } from '@/game/world/terrainUtils'
+import { useGroundRaycast } from '@/game/hooks/useGroundRaycast'
 
 const MOVE_SPEED = 15
 const ARRIVAL_THRESHOLD = 0.05
@@ -35,6 +44,9 @@ const MARKER_BASE_Y = 0.05
 function NormalScene() {
   const meshRef = useRef<Group>(null)
   const markerRef = useRef<Mesh>(null)
+  const groundMeshRef = useRef<Mesh>(null)
+  const walkablesRef = useRef<Group>(null)
+  const playerYRef = useRef<number>(0)
 
   // ---- Facing rotation state ----
   const facingRef = useRef(0)
@@ -63,6 +75,25 @@ function NormalScene() {
 
   // ---- Get current zone from zone store ----
   const currentZone = useZoneStore((s) => s.getCurrentZone())
+
+  // ---- Create terrain from zone heightmap config ----
+  const terrain = useMemo(
+    () => getZoneTerrain(currentZone.id, currentZone.heightmap),
+    [currentZone.id, currentZone.heightmap],
+  )
+
+  // ---- Stable fallback callback for raycast hook ----
+  const fallbackGetHeight = useCallback(
+    (x: number, z: number) => terrain.getHeightAt(x, z),
+    [terrain],
+  )
+
+  // ---- Raycast hook for player Y positioning (ground + walkable surfaces only) ----
+  const { getYAt } = useGroundRaycast({
+    groundRef: groundMeshRef,
+    walkablesRef,
+    fallbackGetHeight,
+  })
 
   // ---- Cache decoration obstacles for pathfinding ----
   const decorations = useMemo(
@@ -102,16 +133,24 @@ function NormalScene() {
       { x: posRef.current.x, z: posRef.current.z },
       targetPosition,
       decorations,
+      terrain,
     )
+
+    // ---- Empty path means destination is unreachable (e.g. too steep) ----
+    if (waypoints.length === 0) {
+      waypointsRef.current = []
+      waypointIndexRef.current = 0
+      setDestination(null)
+      return
+    }
+
     waypointsRef.current = waypoints
     waypointIndexRef.current = 0
 
     // ---- Show marker at final waypoint ----
-    if (waypoints.length > 0) {
-      const last = waypoints[waypoints.length - 1]!
-      setDestination({ x: last.x, z: last.z })
-    }
-  }, [targetPosition, decorations])
+    const last = waypoints[waypoints.length - 1]!
+    setDestination({ x: last.x, z: last.z })
+  }, [targetPosition, decorations, terrain])
 
   // ---- Animate player along waypoints ----
   useFrame((_, delta) => {
@@ -181,15 +220,19 @@ function NormalScene() {
     }
     meshRef.current.rotation.y = currentRotationRef.current
 
-    // ---- Position fully controlled here to avoid JSX prop conflicts ----
+    // ---- Position follows raycasted Y (terrain + collidable objects) ----
+    const playerY = getYAt(posRef.current.x, posRef.current.z)
+    playerYRef.current = playerY
     meshRef.current.position.x = posRef.current.x
-    meshRef.current.position.y = 0
+    meshRef.current.position.y = playerY
     meshRef.current.position.z = posRef.current.z
 
     // ---- Animate destination marker bounce ----
-    if (markerRef.current) {
+    if (markerRef.current && destination) {
       markerRef.current.rotation.y += delta * 2
+      const markerY = getYAt(destination.x, destination.z)
       markerRef.current.position.y =
+        markerY +
         MARKER_BASE_Y +
         Math.abs(Math.sin(Date.now() * 0.001 * MARKER_BOUNCE_SPEED)) *
           MARKER_BOUNCE_HEIGHT
@@ -200,26 +243,36 @@ function NormalScene() {
 
   return (
     <>
-      <FollowCamera />
+      <FollowCamera playerYRef={playerYRef} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <directionalLight position={[-5, 8, -5]} intensity={0.4} />
 
       {/* ---- Zone ground (click always accepted) ---- */}
       <ZoneGround
+        ref={groundMeshRef}
         width={currentZone.width}
         height={currentZone.height}
         groundType={currentZone.groundType}
+        terrain={terrain}
       />
 
       {/* ---- Zone objects (decorations, portals) ---- */}
-      <ZoneObjectRenderer objects={currentZone.objects} />
+      <ZoneObjectRenderer
+        objects={currentZone.objects}
+        terrain={terrain}
+        walkablesRef={walkablesRef}
+      />
 
       {/* ---- Destination marker (shows where the player is heading) ---- */}
       {destination && (
         <mesh
           ref={markerRef}
-          position={[destination.x, MARKER_BASE_Y, destination.z]}
+          position={[
+            destination.x,
+            getYAt(destination.x, destination.z) + MARKER_BASE_Y,
+            destination.z,
+          ]}
           rotation={[0, 0, 0]}
         >
           <cylinderGeometry args={[0, 0.3, 0.5, 4]} />

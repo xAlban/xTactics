@@ -20,11 +20,13 @@
   "dependencies": {
     "@react-three/drei": "^9.121.0",
     "@react-three/fiber": "^8.17.0",
+    "alea": "^1.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "simplex-noise": "^4.0.3",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^4.0.0",
     "three": "^0.171.0",

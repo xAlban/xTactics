@@ -134,6 +134,7 @@ export const DECORATION_MODELS: Record<string, DecorationModelConfig> = {
     scale: 1.0,
     yOffset: 0,
     hasCollision: false,
+    
   },
   'rock-path-small': {
     path: 'models/objects/RockPath_Round_Small_1.gltf',

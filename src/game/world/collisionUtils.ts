@@ -1,4 +1,5 @@
 import type { ZoneObject } from '@/types/zone'
+import type { ZoneTerrain } from '@/game/world/terrainUtils'
 
 interface Point {
   x: number
@@ -15,12 +16,13 @@ interface AABB {
 // ---- Padding around obstacles for player clearance ----
 const OBSTACLE_PADDING = 0.5
 
-// ---- Filter only decoration objects with collision (portals and noCollision decorations are walkable) ----
+// ---- Filter only decoration objects with collision (portals, noCollision, and walkable decorations are excluded) ----
 export function getDecorationObstacles(
   objects: ZoneObject[],
 ): ZoneObject[] {
   return objects.filter(
-    (obj) => obj.type === 'decoration' && !obj.noCollision,
+    (obj) =>
+      obj.type === 'decoration' && !obj.noCollision && !obj.walkable,
   )
 }
 
@@ -94,16 +96,47 @@ function dist(a: Point, b: Point): number {
   return Math.sqrt(dx * dx + dz * dz)
 }
 
+// ---- Check if a segment has any slope exceeding the threshold ----
+// ---- Samples at 1-unit intervals along the segment ----
+function segmentExceedsSlope(
+  from: Point,
+  to: Point,
+  terrain: ZoneTerrain,
+): boolean {
+  const d = dist(from, to)
+  if (d < 0.01) return false
+
+  const steps = Math.max(1, Math.ceil(d))
+  let prevH = terrain.getHeightAt(from.x, from.z)
+
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps
+    const x = from.x + (to.x - from.x) * t
+    const z = from.z + (to.z - from.z) * t
+    const h = terrain.getHeightAt(x, z)
+    const segLen = d / steps
+    const slope = Math.abs(h - prevH) / segLen
+    if (slope > terrain.slopeThreshold) return true
+    prevH = h
+  }
+
+  return false
+}
+
 // ---- Compute shortest path around obstacles using visibility graph + Dijkstra ----
 export function findPath(
   from: Point,
   to: Point,
   obstacles: ZoneObject[],
+  terrain?: ZoneTerrain,
 ): Point[] {
   const boxes = obstacles.map(toAABB)
 
-  // ---- Direct path is clear, no waypoints needed ----
-  if (!isSegmentBlocked(from, to, boxes)) {
+  // ---- Direct path is clear and slope is walkable, no waypoints needed ----
+  if (
+    !isSegmentBlocked(from, to, boxes) &&
+    (!terrain || !segmentExceedsSlope(from, to, terrain))
+  ) {
     return [to]
   }
 
@@ -135,7 +168,11 @@ export function findPath(
   )
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
-      if (!isSegmentBlocked(nodes[i]!, nodes[j]!, boxes)) {
+      if (
+        !isSegmentBlocked(nodes[i]!, nodes[j]!, boxes) &&
+        (!terrain ||
+          !segmentExceedsSlope(nodes[i]!, nodes[j]!, terrain))
+      ) {
         const d = dist(nodes[i]!, nodes[j]!)
         adj[i]!.push({ to: j, cost: d })
         adj[j]!.push({ to: i, cost: d })
@@ -171,9 +208,9 @@ export function findPath(
     }
   }
 
-  // ---- No path found, fall back to direct movement ----
+  // ---- No path found: return empty to block movement ----
   if (costs[endIdx] === Infinity) {
-    return [to]
+    return []
   }
 
   // ---- Reconstruct path (skip start node) ----

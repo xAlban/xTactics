@@ -7,7 +7,7 @@ export type GroundType = 'grass' | 'rock'
 export interface ZoneObject {
   id: string
   type: 'decoration' | 'combatPortal' | 'zonePortal'
-  position: { x: number; z: number }
+  position: { x: number; y?: number; z: number }
   // ---- Bounding box half-extents for collision ----
   size: { x: number; z: number }
   // ---- Zone portal destination ----
@@ -23,6 +23,17 @@ export interface ZoneObject {
   rotationY?: number
   // ---- When true, decoration has no collision (walkable) ----
   noCollision?: boolean
+  // ---- When true, decoration is a walkable surface (player can walk on top) ----
+  walkable?: boolean
+}
+
+// ---- Noise-based terrain height configuration ----
+export interface HeightmapConfig {
+  seed: string
+  amplitude: number // ---- Max height (0-6) ----
+  frequency: number
+  octaves: number
+  slopeThreshold: number // ---- Max walkable slope (rise per unit) ----
 }
 
 // ---- Full definition of a world zone ----
@@ -34,6 +45,7 @@ export interface ZoneDefinition {
   height: number
   defaultSpawn: { x: number; z: number }
   objects: ZoneObject[]
+  heightmap?: HeightmapConfig
 }
 
 // ---- World map linking all zones together ----

@@ -37,7 +37,8 @@ function scatter(
     sizeZ?: number
     scale?: number
     noCollision?: boolean
-    randomRotation?: boolean
+    randomRotation?: boolean,
+    walkable?: boolean
   },
 ): ZoneObject[] {
   return positions.map(([x, z], i) =>
@@ -263,7 +264,7 @@ const grassObjects: ZoneObject[] = [
       [-70, 15],
       [-70, 25],
     ],
-    { noCollision: true, scale: 3 },
+    { noCollision: false, scale: 3, walkable: true },
   ),
   // ---- Road connecting top to flower field ----
   ...scatter(
@@ -275,7 +276,7 @@ const grassObjects: ZoneObject[] = [
       [-55, -30],
       [-50, -30],
     ],
-    { noCollision: true, scale: 3 },
+    { noCollision: false, scale: 3, walkable: true },
   ),
 
   // ================ ROCK ROAD (diagonal, forest to portal) ================
@@ -295,7 +296,7 @@ const grassObjects: ZoneObject[] = [
       [90, 60],
       [90, 70],
     ],
-    { noCollision: true, scale: 2.0 },
+    { noCollision: false, scale: 2.0, walkable: true },
   ),
   ...scatter(
     'road-rock',
@@ -309,7 +310,7 @@ const grassObjects: ZoneObject[] = [
       [83, 28],
       [86, 38],
     ],
-    { noCollision: true, scale: 1.5, randomRotation: true },
+    { noCollision: false, scale: 1.5, randomRotation: true, walkable: true },
   ),
 
   // ================ VILLAGE AREA (bottom-left) with bush fence ================
@@ -458,6 +459,13 @@ export const GRASS_ZONE: ZoneDefinition = {
   height: 200,
   defaultSpawn: { x: -65, z: 0 },
   objects: grassObjects,
+  heightmap: {
+    seed: 'grass-zone',
+    amplitude: 6,
+    frequency: 0.012,
+    octaves: 3,
+    slopeThreshold: 0.6,
+  },
 }
 
 // ---- Rock zone: secondary area with zone transition back to grass ----
