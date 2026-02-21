@@ -77,11 +77,7 @@ export default function MapPanel() {
             y={viewBox.minZ}
             width={viewBox.width}
             height={viewBox.height}
-            fill={
-              currentZone.groundType === 'grass'
-                ? '#2d5a1e'
-                : '#4a4040'
-            }
+            fill={currentZone.groundType === 'grass' ? '#2d5a1e' : '#4a4040'}
             stroke="#ffffff"
             strokeOpacity={0.3}
             strokeWidth={0.3}

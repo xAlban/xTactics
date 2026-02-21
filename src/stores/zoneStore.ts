@@ -11,10 +11,7 @@ interface ZoneState {
   getCurrentZone: () => ZoneDefinition
 
   // ---- Change to a different zone and teleport player to spawn ----
-  changeZone: (
-    zoneId: string,
-    spawnPosition?: { x: number; z: number },
-  ) => void
+  changeZone: (zoneId: string, spawnPosition?: { x: number; z: number }) => void
 }
 
 export const useZoneStore = create<ZoneState>()(
@@ -27,8 +24,7 @@ export const useZoneStore = create<ZoneState>()(
         const zone = WORLD_MAP.zones.find((z) => z.id === currentZoneId)
         // ---- Fallback to start zone if ID is invalid ----
         return (
-          zone ??
-          WORLD_MAP.zones.find((z) => z.id === WORLD_MAP.startZoneId)!
+          zone ?? WORLD_MAP.zones.find((z) => z.id === WORLD_MAP.startZoneId)!
         )
       },
 

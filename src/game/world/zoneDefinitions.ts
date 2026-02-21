@@ -37,7 +37,7 @@ function scatter(
     sizeZ?: number
     scale?: number
     noCollision?: boolean
-    randomRotation?: boolean,
+    randomRotation?: boolean
     walkable?: boolean
   },
 ): ZoneObject[] {
@@ -84,12 +84,12 @@ const grassObjects: ZoneObject[] = [
     ],
     { sizeX: 2, sizeZ: 2, scale: 2.5, randomRotation: true },
   ),
-  ...scatter(
-    'meadow-tree-c',
-    'common-tree-5',
-    [[-75, -35]],
-    { sizeX: 2, sizeZ: 2, scale: 2, randomRotation: true },
-  ),
+  ...scatter('meadow-tree-c', 'common-tree-5', [[-75, -35]], {
+    sizeX: 2,
+    sizeZ: 2,
+    scale: 2,
+    randomRotation: true,
+  }),
 
   // ================ DENSE FOREST (top-right) ================
   // ---- Outer edge trees ----
@@ -459,13 +459,6 @@ export const GRASS_ZONE: ZoneDefinition = {
   height: 200,
   defaultSpawn: { x: -65, z: 0 },
   objects: grassObjects,
-  heightmap: {
-    seed: 'grass-zone',
-    amplitude: 6,
-    frequency: 0.012,
-    octaves: 3,
-    slopeThreshold: 0.6,
-  },
 }
 
 // ---- Rock zone: secondary area with zone transition back to grass ----

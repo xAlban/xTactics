@@ -27,15 +27,6 @@ export interface ZoneObject {
   walkable?: boolean
 }
 
-// ---- Noise-based terrain height configuration ----
-export interface HeightmapConfig {
-  seed: string
-  amplitude: number // ---- Max height (0-6) ----
-  frequency: number
-  octaves: number
-  slopeThreshold: number // ---- Max walkable slope (rise per unit) ----
-}
-
 // ---- Full definition of a world zone ----
 export interface ZoneDefinition {
   id: string
@@ -45,7 +36,6 @@ export interface ZoneDefinition {
   height: number
   defaultSpawn: { x: number; z: number }
   objects: ZoneObject[]
-  heightmap?: HeightmapConfig
 }
 
 // ---- World map linking all zones together ----

@@ -2,6 +2,15 @@
 
 Tactical turn-based RPG with isometric 3D view, inspired by Dofus and Final Fantasy Tactics.
 
+## Tech
+
+- **Renderer**: React Three Fiber + Three.js (3D isometric view)
+- **Physics**: @react-three/rapier (Rapier WASM) — used for normal-mode player movement and collision detection. Player is a dynamic rigid body with capsule collider; obstacles and walkable surfaces are fixed rigid bodies with cuboid colliders.
+- **UI**: React 18, shadcn/ui, Tailwind CSS v4
+- **Desktop**: Electron (via vite-plugin-electron)
+- **State**: Zustand
+- **Build**: Vite 6, TypeScript 5
+
 ## Development
 
 ### Commands

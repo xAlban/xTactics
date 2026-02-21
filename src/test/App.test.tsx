@@ -12,6 +12,15 @@ vi.mock('@react-three/fiber', () => ({
   useFrame: () => null,
 }))
 
+// ---- Mock Rapier physics (no WASM in jsdom) ----
+vi.mock('@react-three/rapier', () => ({
+  Physics: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RigidBody: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  CuboidCollider: () => null,
+  CapsuleCollider: () => null,
+  interactionGroups: () => 0,
+}))
+
 vi.mock('@react-three/drei', () => ({
   OrthographicCamera: () => null,
   OrbitControls: () => null,

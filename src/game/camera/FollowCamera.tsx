@@ -49,20 +49,13 @@ function FollowCamera({ playerYRef }: FollowCameraProps) {
     // ---- Update OrbitControls target to follow player smoothly ----
     if (controlsRef.current) {
       const currentTarget = controlsRef.current.target
-      currentTarget.x +=
-        (playerPosition.x - currentTarget.x) * LERP_FACTOR
-      currentTarget.y +=
-        (playerY - currentTarget.y) * LERP_FACTOR
-      currentTarget.z +=
-        (playerPosition.z - currentTarget.z) * LERP_FACTOR
+      currentTarget.x += (playerPosition.x - currentTarget.x) * LERP_FACTOR
+      currentTarget.y += (playerY - currentTarget.y) * LERP_FACTOR
+      currentTarget.z += (playerPosition.z - currentTarget.z) * LERP_FACTOR
       controlsRef.current.update()
     } else {
       // ---- Fallback if no controls ----
-      cameraRef.current.lookAt(
-        playerPosition.x,
-        playerY,
-        playerPosition.z,
-      )
+      cameraRef.current.lookAt(playerPosition.x, playerY, playerPosition.z)
     }
   })
 

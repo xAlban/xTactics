@@ -22,9 +22,7 @@ function ZonePortal({
   const groupRef = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
   const changeZone = useZoneStore((s) => s.changeZone)
-  const setTargetWithAction = useGameModeStore(
-    (s) => s.setTargetWithAction,
-  )
+  const setTargetWithAction = useGameModeStore((s) => s.setTargetWithAction)
 
   // ---- Slowly rotate the portal ----
   useFrame((_, delta) => {

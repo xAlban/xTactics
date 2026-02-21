@@ -30,9 +30,7 @@ describe('zoneStore', () => {
   })
 
   it('changeZone teleports player to spawn position', () => {
-    useZoneStore
-      .getState()
-      .changeZone('rock-zone', { x: -11, z: 0 })
+    useZoneStore.getState().changeZone('rock-zone', { x: -11, z: 0 })
     const { playerPosition } = useGameModeStore.getState()
     expect(playerPosition.x).toBe(-11)
     expect(playerPosition.z).toBe(0)
@@ -58,12 +56,8 @@ describe('zoneStore', () => {
   })
 
   it('changeZone clears target position via setPlayerPosition', () => {
-    useGameModeStore
-      .getState()
-      .setTargetPosition({ x: 10, z: 10 })
-    useZoneStore
-      .getState()
-      .changeZone('rock-zone', { x: -11, z: 0 })
+    useGameModeStore.getState().setTargetPosition({ x: 10, z: 10 })
+    useZoneStore.getState().changeZone('rock-zone', { x: -11, z: 0 })
     // ---- setPlayerPosition sets targetPosition to null ----
     expect(useGameModeStore.getState().targetPosition).toBeNull()
   })

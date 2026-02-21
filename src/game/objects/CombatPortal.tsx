@@ -34,9 +34,7 @@ function CombatPortal({ position, combatSetup }: CombatPortalProps) {
   const groupRef = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
   const enterCombat = useGameModeStore((s) => s.enterCombat)
-  const setTargetWithAction = useGameModeStore(
-    (s) => s.setTargetWithAction,
-  )
+  const setTargetWithAction = useGameModeStore((s) => s.setTargetWithAction)
 
   // ---- Slowly rotate the portal to make it noticeable ----
   useFrame((_, delta) => {
